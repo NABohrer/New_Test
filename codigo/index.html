@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Plataforma hip.hop - Teste Fundação 3D</title>
+<title>Plataforma hip.hop - Rio de Janeiro 3D</title>
 <!-- 📊 Google Analytics 4 (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8YBRS5NX34"></script>
 <script>
@@ -12,7 +12,7 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-8YBRS5NX34');
 </script>
-<!-- 🗺️ Google Maps JavaScript API -->
+<!-- 🗺️ Google Maps JavaScript API (Insira sua chave no campo YOUR_API_KEY) -->
 <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&v=weekly" async defer></script>
 <style>
 html, body {
@@ -185,10 +185,10 @@ margin-bottom: 6px;
 <body>
 <div id="header">
 <div class="header-left">
-<img src="../baloes/Logo_hiphop.png" alt="Logo" class="header-logo">
+<img src="../baloes/Logo_hiphop.png" alt="Logo hip.hop" class="header-logo">
 <div class="header-text">
-<h2>Plataforma 3D - Teste</h2>
-<p>Ambiente de Validação</p>
+<h2>Plataforma hip.hop 3D</h2>
+<p>DYART - Business Intelligence (Rio de Janeiro)</p>
 </div>
 </div>
 <div class="lang-selector">
@@ -198,7 +198,7 @@ margin-bottom: 6px;
 </div>
 </div>
 <div id="tour-control">
-<button id="btn-tour-txt" class="btn-tour" onclick="iniciarTourPresencial()">🚀 Iniciar Tour</button>
+<button id="btn-tour-txt" class="btn-tour" onclick="iniciarTourPresencial()">🚀 Iniciar Tour Presencial</button>
 <button id="btn-gps-txt" class="btn-localizacao" onclick="centralizarNoUsuario()">📍 Onde estou</button>
 <button id="btn-3d-txt" class="btn-3d" onclick="alternarVisao3D()">🏙️ Visão 3D</button>
 </div>
@@ -207,17 +207,17 @@ margin-bottom: 6px;
 
 <div id="map"></div>
 <script>
-// 🔒 PERMITE RODAR NO NABOHRER.GITHUB.IO, DYART E LOCALHOST
+// 🔒 VALIDAÇÃO DE DOMÍNIO PERMITIDO
 (function validarDominioAutorizado() {
     const dominiosPermitidos = ['nabohrer.github.io', 'dyart.github.io', 'localhost', '127.0.0.1'];
-    const hostAtual = window.location.hostname;
+    const hostAtual = window.location.hostname.toLowerCase();
     const autorizado = dominiosPermitidos.some(d => hostAtual === d || hostAtual.endsWith('.' + d));
     
     if (!autorizado) {
         document.body.innerHTML = `
             <div style="padding: 40px; text-align: center; font-family: sans-serif; background: #fff; height: 100vh;">
                 <h2 style="color: #c0392b;">⚠️ Acesso Não Autorizado</h2>
-                <p>Ambiente restrito de testes.</p>
+                <p>Ambiente de validação restrito.</p>
             </div>`;
         throw new Error("Execução interrompida: Domínio não autorizado.");
     }
@@ -235,16 +235,16 @@ let infoWindowAberta = null;
 let modo3DAtivo = false;
 
 const TRADUCOES = {
-PT: { tour: "🚀 Iniciar Tour", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", carregados: "✅ {qtd} pontos carregados", ouvirHistoria: "🎵 Ouvir História:" },
-EN: { tour: "🚀 Start Tour", gps: "📍 My Location", visao3D: "🏙️ 3D View", carregados: "✅ {qtd} spots loaded", ouvirHistoria: "🎵 Listen to Story:" },
-ES: { tour: "🚀 Iniciar Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙️ Vista 3D", carregados: "✅ {qtd} puntos cargados", ouvirHistoria: "🎵 Escuchar Historia:" }
+PT: { tour: "🚀 Iniciar Tour", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
+EN: { tour: "🚀 Start Tour", gps: "📍 My Location", visao3D: "🏙️ 3D View", carregados: "✅ {qtd} RJ spots loaded", ouvirHistoria: "🎵 Listen to Story:" },
+ES: { tour: "🚀 Iniciar Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙️ Vista 3D", carregados: "✅ {qtd} puntos en RJ cargados", ouvirHistoria: "🎵 Escuchar Historia:" }
 };
 
 function initMap() {
-const centroInicial = { lat: -22.9068, lng: -43.1729 };
+const centroRJ = { lat: -22.9068, lng: -43.1729 };
 map = new google.maps.Map(document.getElementById("map"), {
 zoom: 17,
-center: centroInicial,
+center: centroRJ,
 mapTypeId: 'vector',
 heading: 320,
 tilt: 45,
@@ -282,7 +282,6 @@ gerarBotoesFiltro(listaCategoriasEncontradas);
 plotarPinsNoMapa();
 }
 
-// Trata o nome/caminho do arquivo de áudio adicionando a pasta do idioma correspondente
 function resolverCaminhoAudio(rawInput, lang) {
 if (!rawInput) return "";
 let nomeArquivo = String(rawInput).trim();
@@ -293,10 +292,11 @@ if (matchFormula) nomeArquivo = matchFormula[1];
 nomeArquivo = nomeArquivo.replace(/['"]/g, '').trim();
 if (!nomeArquivo) return "";
 
-// Se for um link HTTP completo, mantém como está. Caso contrário, aponta para a pasta relativa
-if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) {
-    return nomeArquivo;
-}
+// Se já contiver o protocolo HTTP/HTTPS ou a pasta relativa, usa diretamente
+if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
+if (nomeArquivo.includes('/')) return nomeArquivo;
+
+// Monta o caminho automático baseado na pasta do idioma
 return `../audios_${lang}/${nomeArquivo}`;
 }
 
@@ -313,7 +313,11 @@ return match ? match[1] : null;
 
 async function carregarDadosPlanilha() {
 const spreadsheetId = extrairIdPlanilha(LINK_DA_PLANILHA);
-if (!spreadsheetId) return;
+if (!spreadsheetId) {
+document.getElementById("status-carregamento").innerHTML = "❌ ID da Planilha inválido.";
+return;
+}
+
 try {
 const urlGviz = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?gid=0&tqx=out:json`;
 const resposta = await fetch(urlGviz);
@@ -330,43 +334,47 @@ try {
 if (!linha || !linha.c) return;
 const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
 
-let nomePatrimonio = val(0);
-if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio")) return;
+let nomePatrimonio = val(0); // Coluna A
+if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
 
-let latNum = parseFloat(val(1).replace(',', '.'));
-let lngNum = parseFloat(val(2).replace(',', '.'));
-let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
+let latNum = parseFloat(val(1).replace(',', '.')); // Coluna B
+let lngNum = parseFloat(val(2).replace(',', '.')); // Coluna C
+let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U"; // Coluna D
 
 if (!isNaN(latNum) && !isNaN(lngNum)) {
-let cat = val(7) || "Geral";
+let cat = val(7) || "Geral"; // Coluna H (Categoria)
 if (cat !== "Geral") categoriasSet.add(cat);
+
 pontosHistoricos.push({
 id: contadorId++,
 nome: nomePatrimonio,
 lat: latNum,
 lng: lngNum,
 balao: tipoBalao,
-raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
+raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25), // Coluna G (Raio)
 categoria: cat,
-foto: formatarLinkImagemDrive(val(8)),
-resumo: { PT: val(4), EN: val(9), ES: val(11) },
+foto: formatarLinkImagemDrive(val(8)), // Coluna I (Imagem)
+resumo: { 
+    PT: val(4),  // Coluna E
+    EN: val(9),  // Coluna J
+    ES: val(11)  // Coluna L
+},
 audioArquivo: { 
-    PT: resolverCaminhoAudio(val(5), 'PT'), 
-    EN: resolverCaminhoAudio(val(10), 'EN'), 
-    ES: resolverCaminhoAudio(val(12), 'ES') 
+    PT: resolverCaminhoAudio(val(5), 'PT'),   // Coluna F
+    EN: resolverCaminhoAudio(val(10), 'EN'),  // Coluna K
+    ES: resolverCaminhoAudio(val(12), 'ES')   // Coluna M
 }
 });
 }
 } catch (e) {}
 });
 
-document.getElementById("status-carregamento").innerHTML =
-TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
+document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
 listaCategoriasEncontradas = Array.from(categoriasSet);
 gerarBotoesFiltro(listaCategoriasEncontradas);
 plotarPinsNoMapa();
 } catch (erro) {
-document.getElementById("status-carregamento").innerHTML = "❌ Erro ao carregar planilha.";
+document.getElementById("status-carregamento").innerHTML = "❌ Erro ao ler a planilha.";
 }
 }
 
