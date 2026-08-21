@@ -249,9 +249,10 @@ ES: { tour: "🚀 Iniciar Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙�
 function initMap() {
     const centroRJ = { lat: -22.9068, lng: -43.1729 };
     map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 17,
+        zoom: 18,
         center: centroRJ,
-        mapId: 'b274d14dcc2c76461c96b2d9', // 👈 ID do Mapa 3D do Google Cloud
+        mapId: 'b274d14dcc2c76461c96b2d9',
+        mapTypeId: 'hybrid', // 🛰️ ATIVADO: Foto real de Satélite + Ruas
         heading: 320,
         tilt: 45,
         mapTypeControl: false,
