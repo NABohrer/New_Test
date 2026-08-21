@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Plataforma hip.hop - Rio de Janeiro 3D</title>
+<title>Plataforma hip.hop - Rio de Janeiro</title>
 <!-- 📊 Google Analytics 4 (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8YBRS5NX34"></script>
 <script>
@@ -95,6 +95,10 @@ cursor: pointer;
 flex: 2;
 transition: background 0.2s;
 }
+.btn-tour.ativo {
+background: #c0392b !important;
+animation: pulse 1.5s infinite;
+}
 .btn-localizacao {
 background: #2b6cb0;
 color: white;
@@ -118,6 +122,11 @@ border-radius: 6px;
 cursor: pointer;
 flex: 1;
 transition: background 0.2s;
+}
+@keyframes pulse {
+0% { opacity: 1; }
+50% { opacity: 0.6; }
+100% { opacity: 1; }
 }
 /* Filtros de Categoria */
 #filter-bar {
@@ -238,43 +247,177 @@ let categoriaAtiva = "TODAS";
 let idiomaAtual = "PT";
 let listaCategoriasEncontradas = [];
 let infoWindowAberta = null;
-let modo3DAtivo = true;
+let modo3DAtivo = false;
+
+// Controle de GPS e Tour Presencial
+let marcadorUsuario = null;
+let watchGpsId = null;
+let tourPresencialAtivo = false;
+let pontosTocadosTour = new Set();
 
 const TRADUCOES = {
-PT: { tour: "🚀 Iniciar Tour", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
-EN: { tour: "🚀 Start Tour", gps: "📍 My Location", visao3D: "🏙️ 3D View", carregados: "✅ {qtd} RJ spots loaded", ouvirHistoria: "🎵 Listen to Story:" },
-ES: { tour: "🚀 Iniciar Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙️ Vista 3D", carregados: "✅ {qtd} puntos en RJ cargados", ouvirHistoria: "🎵 Escuchar Historia:" }
+PT: { tour: "🚀 Iniciar Tour Presencial", tourParar: "🛑 Parar Tour Presencial", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", visao2D: "🗺️ Mapa 2D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
+EN: { tour: "🚀 Start Live Tour", tourParar: "🛑 Stop Live Tour", gps: "📍 My Location", visao3D: "🏙️ 3D View", visao2D: "🗺️ 2D Map", carregados: "✅ {qtd} RJ spots loaded", ouvirHistoria: "🎵 Listen to Story:" },
+ES: { tour: "🚀 Iniciar Recorrido", tourParar: "🛑 Detener Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙️ Vista 3D", visao2D: "🗺️ Mapa 2D", carregados: "✅ {qtd} puntos en RJ cargados", ouvirHistoria: "🎵 Escuchar Historia:" }
 };
 
 function initMap() {
     const centroRJ = { lat: -22.9068, lng: -43.1729 };
     map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 18,
+        zoom: 16,
         center: centroRJ,
         mapId: 'b274d14dcc2c76461c96b2d9',
-        mapTypeId: 'hybrid', // 🛰️ ATIVADO: Foto real de Satélite + Ruas
-        heading: 320,
-        tilt: 45,
+        mapTypeId: 'roadmap', // 🗺️ ENTRA POR PADRÃO NO MAPA TRADICIONAL 2D
+        heading: 0,
+        tilt: 0,
         mapTypeControl: false,
         streetViewControl: true,
         fullscreenControl: false
     });
-    modo3DAtivo = true;
+    modo3DAtivo = false;
     carregarDadosPlanilha();
 }
 
+// 🏙️ ALTERNÂNCIA REAL ENTRE MAPA TRADICIONAL 2D E SATÉLITE 3D
 function alternarVisao3D() {
     if (!map) return;
     modo3DAtivo = !modo3DAtivo;
+    const btn3d = document.getElementById('btn-3d-txt');
+    
     if (modo3DAtivo) {
+        map.setMapTypeId('hybrid'); // Foto de Satélite + Nomes
         map.setTilt(45);
         map.setHeading(320);
         map.setZoom(18);
+        btn3d.innerText = TRADUCOES[idiomaAtual].visao2D;
     } else {
+        map.setMapTypeId('roadmap'); // Mapa Tradicional
         map.setTilt(0);
         map.setHeading(0);
         map.setZoom(16);
+        btn3d.innerText = TRADUCOES[idiomaAtual].visao3D;
     }
+}
+
+// 📍 FUNÇÃO "ONDE ESTOU" (GPS EM TEMPO REAL)
+function centralizarNoUsuario() {
+    if (!navigator.geolocation) {
+        alert("Geolocalização não é suportada pelo seu navegador.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (posicao) => {
+            const pos = {
+                lat: posicao.coords.latitude,
+                lng: posicao.coords.longitude
+            };
+
+            if (!marcadorUsuario) {
+                marcadorUsuario = new google.maps.Marker({
+                    position: pos,
+                    map: map,
+                    title: "Sua Localização",
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: "#2980b9",
+                        fillOpacity: 1,
+                        strokeColor: "#ffffff",
+                        strokeWeight: 2,
+                    }
+                });
+            } else {
+                marcadorUsuario.setPosition(pos);
+            }
+
+            map.setCenter(pos);
+            map.setZoom(18);
+        },
+        () => {
+            alert("Não foi possível obter sua localização. Verifique as permissões do GPS.");
+        },
+        { enableHighAccuracy: true }
+    );
+}
+
+// 🚀 FUNÇÃO "INICIAR TOUR PRESENCIAL" (GEOFENCING E AUTO-PLAY DE ÁUDIO)
+function iniciarTourPresencial() {
+    tourPresencialAtivo = !tourPresencialAtivo;
+    const btnTour = document.getElementById('btn-tour-txt');
+
+    if (tourPresencialAtivo) {
+        btnTour.classList.add('ativo');
+        btnTour.innerText = TRADUCOES[idiomaAtual].tourParar;
+        pontosTocadosTour.clear();
+
+        if (navigator.geolocation) {
+            watchGpsId = navigator.geolocation.watchPosition(
+                verificarProximidadePontos,
+                (err) => console.log("Erro no GPS do Tour:", err),
+                { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+            );
+        }
+        alert("Tour Presencial Ativado! Caminhe pelas ruas do Rio: o aplicativo abrirá os pontos e tocará os áudios automaticamente conforme você se aproximar.");
+    } else {
+        btnTour.classList.remove('ativo');
+        btnTour.innerText = TRADUCOES[idiomaAtual].tour;
+        if (watchGpsId !== null) {
+            navigator.geolocation.clearWatch(watchGpsId);
+            watchGpsId = null;
+        }
+        alert("Tour Presencial Desativado.");
+    }
+}
+
+// CÁLCULO DE DISTÂNCIA ENTRE O USUÁRIO E OS PONTOS (Fórmula de Haversine em metros)
+function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Raio da Terra em metros
+    const rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad;
+    const dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function verificarProximidadePontos(posicao) {
+    if (!tourPresencialAtivo) return;
+    const userLat = posicao.coords.latitude;
+    const userLng = posicao.coords.longitude;
+
+    // Atualiza marcador de posição
+    if (marcadorUsuario) {
+        marcadorUsuario.setPosition({ lat: userLat, lng: userLng });
+    }
+
+    pontosHistoricos.forEach(ponto => {
+        if (pontosTocadosTour.has(ponto.id)) return; // Já tocou neste tour
+
+        const dist = calcularDistanciaMetros(userLat, userLng, ponto.lat, ponto.lng);
+        if (dist <= ponto.raio) { // Dentro do raio configurado na planilha (25m ou 150m)
+            pontosTocadosTour.add(ponto.id);
+
+            // Procura o marcador e aciona o clique automático
+            const itemMapa = listaMarcadoresMapa.find(m => m.ponto.id === ponto.id);
+            if (itemMapa) {
+                if (infoWindowAberta) infoWindowAberta.close();
+                itemMapa.infoWindow.open(map, itemMapa.marker);
+                infoWindowAberta = itemMapa.infoWindow;
+                map.panTo({ lat: ponto.lat, lng: ponto.lng });
+
+                // Dispara o áudio automaticamente
+                setTimeout(() => {
+                    const elAudio = document.getElementById(`audio-ponto-${ponto.id}`);
+                    if (elAudio) {
+                        elAudio.play().catch(e => console.log("Bloqueio de autostart de áudio pelo navegador:", e));
+                    }
+                }, 500);
+            }
+        }
+    });
 }
 
 function trocarIdioma(lang) {
@@ -282,9 +425,9 @@ function trocarIdioma(lang) {
     document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`btn-${lang.toLowerCase()}`).classList.add('active');
     const t = TRADUCOES[lang];
-    document.getElementById('btn-tour-txt').innerText = t.tour;
+    document.getElementById('btn-tour-txt').innerText = tourPresencialAtivo ? t.tourParar : t.tour;
     document.getElementById('btn-gps-txt').innerText = t.gps;
-    document.getElementById('btn-3d-txt').innerText = t.visao3D;
+    document.getElementById('btn-3d-txt').innerText = modo3DAtivo ? t.visao2D : t.visao3D;
     gerarBotoesFiltro(listaCategoriasEncontradas);
     plotarPinsNoMapa();
 }
