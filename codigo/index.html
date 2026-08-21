@@ -156,7 +156,7 @@ text-align: center;
 background: #edf2f7;
 flex-shrink: 0;
 }
-/* Força a renderização em altura total */
+/* Contêiner do Mapa */
 #map {
 width: 100%;
 height: calc(100vh - 140px);
@@ -238,7 +238,7 @@ let categoriaAtiva = "TODAS";
 let idiomaAtual = "PT";
 let listaCategoriasEncontradas = [];
 let infoWindowAberta = null;
-let modo3DAtivo = false;
+let modo3DAtivo = true;
 
 const TRADUCOES = {
 PT: { tour: "🚀 Iniciar Tour", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
@@ -247,211 +247,211 @@ ES: { tour: "🚀 Iniciar Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙�
 };
 
 function initMap() {
-const centroRJ = { lat: -22.9068, lng: -43.1729 };
-map = new google.maps.Map(document.getElementById("map"), {
-zoom: 17,
-center: centroRJ,
-mapTypeId: google.maps.MapTypeId.ROADMAP,
-heading: 320,
-tilt: 45,
-mapTypeControl: false,
-streetViewControl: true,
-fullscreenControl: false
-});
-modo3DAtivo = true;
-carregarDadosPlanilha();
+    const centroRJ = { lat: -22.9068, lng: -43.1729 };
+    map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 17,
+        center: centroRJ,
+        mapId: 'b274d14dcc2c76461c96b2d9', // 👈 ID do Mapa 3D do Google Cloud
+        heading: 320,
+        tilt: 45,
+        mapTypeControl: false,
+        streetViewControl: true,
+        fullscreenControl: false
+    });
+    modo3DAtivo = true;
+    carregarDadosPlanilha();
 }
 
 function alternarVisao3D() {
-if (!map) return;
-modo3DAtivo = !modo3DAtivo;
-if (modo3DAtivo) {
-map.setTilt(45);
-map.setHeading(320);
-map.setZoom(18);
-} else {
-map.setTilt(0);
-map.setHeading(0);
-map.setZoom(16);
-}
+    if (!map) return;
+    modo3DAtivo = !modo3DAtivo;
+    if (modo3DAtivo) {
+        map.setTilt(45);
+        map.setHeading(320);
+        map.setZoom(18);
+    } else {
+        map.setTilt(0);
+        map.setHeading(0);
+        map.setZoom(16);
+    }
 }
 
 function trocarIdioma(lang) {
-idiomaAtual = lang;
-document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
-document.getElementById(`btn-${lang.toLowerCase()}`).classList.add('active');
-const t = TRADUCOES[lang];
-document.getElementById('btn-tour-txt').innerText = t.tour;
-document.getElementById('btn-gps-txt').innerText = t.gps;
-document.getElementById('btn-3d-txt').innerText = t.visao3D;
-gerarBotoesFiltro(listaCategoriasEncontradas);
-plotarPinsNoMapa();
+    idiomaAtual = lang;
+    document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${lang.toLowerCase()}`).classList.add('active');
+    const t = TRADUCOES[lang];
+    document.getElementById('btn-tour-txt').innerText = t.tour;
+    document.getElementById('btn-gps-txt').innerText = t.gps;
+    document.getElementById('btn-3d-txt').innerText = t.visao3D;
+    gerarBotoesFiltro(listaCategoriasEncontradas);
+    plotarPinsNoMapa();
 }
 
 function resolverCaminhoAudio(rawInput, lang) {
-if (!rawInput) return "";
-let nomeArquivo = String(rawInput).trim();
-if (nomeArquivo.includes('="') || nomeArquivo.includes('("')) {
-const matchFormula = nomeArquivo.match(/"([^"\\]+)"/);
-if (matchFormula) nomeArquivo = matchFormula[1];
-}
-nomeArquivo = nomeArquivo.replace(/['"]/g, '').trim();
-if (!nomeArquivo) return "";
+    if (!rawInput) return "";
+    let nomeArquivo = String(rawInput).trim();
+    if (nomeArquivo.includes('="') || nomeArquivo.includes('("')) {
+        const matchFormula = nomeArquivo.match(/"([^"\\]+)"/);
+        if (matchFormula) nomeArquivo = matchFormula[1];
+    }
+    nomeArquivo = nomeArquivo.replace(/['"]/g, '').trim();
+    if (!nomeArquivo) return "";
 
-if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
-if (nomeArquivo.includes('/')) return nomeArquivo;
+    if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
+    if (nomeArquivo.includes('/')) return nomeArquivo;
 
-return `../audios_${lang}/${nomeArquivo}`;
+    return `../audios_${lang}/${nomeArquivo}`;
 }
 
 function formatarLinkImagemDrive(url) {
-if (!url) return "";
-let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
-return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : url.trim();
+    if (!url) return "";
+    let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
+    return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : url.trim();
 }
 
 function extrairIdPlanilha(url) {
-const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-return match ? match[1] : null;
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
 }
 
 async function carregarDadosPlanilha() {
-const spreadsheetId = extrairIdPlanilha(LINK_DA_PLANILHA);
-if (!spreadsheetId) {
-document.getElementById("status-carregamento").innerHTML = "❌ ID da Planilha inválido.";
-return;
-}
+    const spreadsheetId = extrairIdPlanilha(LINK_DA_PLANILHA);
+    if (!spreadsheetId) {
+        document.getElementById("status-carregamento").innerHTML = "❌ ID da Planilha inválido.";
+        return;
+    }
 
-try {
-const urlGviz = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?gid=0&tqx=out:json`;
-const resposta = await fetch(urlGviz);
-const textoCompleto = await resposta.text();
-const jsonPuro = JSON.parse(textoCompleto.substring(textoCompleto.indexOf('{'), textoCompleto.lastIndexOf('}') + 1));
-const linhas = jsonPuro.table.rows;
+    try {
+        const urlGviz = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?gid=0&tqx=out:json`;
+        const resposta = await fetch(urlGviz);
+        const textoCompleto = await resposta.text();
+        const jsonPuro = JSON.parse(textoCompleto.substring(textoCompleto.indexOf('{'), textoCompleto.lastIndexOf('}') + 1));
+        const linhas = jsonPuro.table.rows;
 
-pontosHistoricos = [];
-let contadorId = 1;
-let categoriasSet = new Set();
+        pontosHistoricos = [];
+        let contadorId = 1;
+        let categoriasSet = new Set();
 
-linhas.forEach((linha) => {
-try {
-if (!linha || !linha.c) return;
-const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
+        linhas.forEach((linha) => {
+            try {
+                if (!linha || !linha.c) return;
+                const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
 
-let nomePatrimonio = val(0);
-if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
+                let nomePatrimonio = val(0);
+                if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
 
-let latNum = parseFloat(val(1).replace(',', '.'));
-let lngNum = parseFloat(val(2).replace(',', '.'));
-let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
+                let latNum = parseFloat(val(1).replace(',', '.'));
+                let lngNum = parseFloat(val(2).replace(',', '.'));
+                let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
 
-if (!isNaN(latNum) && !isNaN(lngNum)) {
-let cat = val(7) || "Geral";
-if (cat !== "Geral") categoriasSet.add(cat);
+                if (!isNaN(latNum) && !isNaN(lngNum)) {
+                    let cat = val(7) || "Geral";
+                    if (cat !== "Geral") categoriasSet.add(cat);
 
-pontosHistoricos.push({
-id: contadorId++,
-nome: nomePatrimonio,
-lat: latNum,
-lng: lngNum,
-balao: tipoBalao,
-raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
-categoria: cat,
-foto: formatarLinkImagemDrive(val(8)),
-resumo: { 
-    PT: val(4),
-    EN: val(9),
-    ES: val(11)
-},
-audioArquivo: { 
-    PT: resolverCaminhoAudio(val(5), 'PT'),
-    EN: resolverCaminhoAudio(val(10), 'EN'),
-    ES: resolverCaminhoAudio(val(12), 'ES')
-}
-});
-}
-} catch (e) {}
-});
+                    pontosHistoricos.push({
+                        id: contadorId++,
+                        nome: nomePatrimonio,
+                        lat: latNum,
+                        lng: lngNum,
+                        balao: tipoBalao,
+                        raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
+                        categoria: cat,
+                        foto: formatarLinkImagemDrive(val(8)),
+                        resumo: { 
+                            PT: val(4),
+                            EN: val(9),
+                            ES: val(11)
+                        },
+                        audioArquivo: { 
+                            PT: resolverCaminhoAudio(val(5), 'PT'),
+                            EN: resolverCaminhoAudio(val(10), 'EN'),
+                            ES: resolverCaminhoAudio(val(12), 'ES')
+                        }
+                    });
+                }
+            } catch (e) {}
+        });
 
-document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
-listaCategoriasEncontradas = Array.from(categoriasSet);
-gerarBotoesFiltro(listaCategoriasEncontradas);
-plotarPinsNoMapa();
-} catch (erro) {
-document.getElementById("status-carregamento").innerHTML = "❌ Erro ao ler a planilha.";
-}
+        document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
+        listaCategoriasEncontradas = Array.from(categoriasSet);
+        gerarBotoesFiltro(listaCategoriasEncontradas);
+        plotarPinsNoMapa();
+    } catch (erro) {
+        document.getElementById("status-carregamento").innerHTML = "❌ Erro ao ler a planilha.";
+    }
 }
 
 function plotarPinsNoMapa() {
-if (!map) return;
-listaMarcadoresMapa.forEach(item => item.marker.setMap(null));
-listaMarcadoresMapa = [];
-const bounds = new google.maps.LatLngBounds();
-const t = TRADUCOES[idiomaAtual];
+    if (!map) return;
+    listaMarcadoresMapa.forEach(item => item.marker.setMap(null));
+    listaMarcadoresMapa = [];
+    const bounds = new google.maps.LatLngBounds();
+    const t = TRADUCOES[idiomaAtual];
 
-pontosHistoricos.forEach(ponto => {
-if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
-const iconeUrl = (ponto.balao === 'E') ? '../baloes/Balao_E.png' : '../baloes/Balao_U.png';
-const pos = { lat: ponto.lat, lng: ponto.lng };
-bounds.extend(pos);
+    pontosHistoricos.forEach(ponto => {
+        if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
+        const iconeUrl = (ponto.balao === 'E') ? '../baloes/Balao_E.png' : '../baloes/Balao_U.png';
+        const pos = { lat: ponto.lat, lng: ponto.lng };
+        bounds.extend(pos);
 
-const marker = new google.maps.Marker({
-position: pos,
-map: map,
-title: ponto.nome,
-icon: {
-url: iconeUrl,
-scaledSize: new google.maps.Size(34, 42)
-}
-});
+        const marker = new google.maps.Marker({
+            position: pos,
+            map: map,
+            title: ponto.nome,
+            icon: {
+                url: iconeUrl,
+                scaledSize: new google.maps.Size(34, 42)
+            }
+        });
 
-const textoResumo = ponto.resumo[idiomaAtual] || ponto.resumo['PT'] || '';
-const urlAudio = ponto.audioArquivo[idiomaAtual] || ponto.audioArquivo['PT'] || '';
-const idAudio = `audio-ponto-${ponto.id}`;
+        const textoResumo = ponto.resumo[idiomaAtual] || ponto.resumo['PT'] || '';
+        const urlAudio = ponto.audioArquivo[idiomaAtual] || ponto.audioArquivo['PT'] || '';
+        const idAudio = `audio-ponto-${ponto.id}`;
 
-let htmlModal = `<div style="max-width:260px; font-family:sans-serif;">` +
-`<span class="badge-tag ${ponto.balao === 'E' ? 'tag-estrada' : 'tag-urbano'}">${ponto.balao === 'E' ? 'Estrada' : 'Urbano'} (${ponto.raio}m)</span>` +
-(ponto.categoria ? `<span class="badge-tag tag-categoria">${ponto.categoria}</span>` : '') +
-`<h3 style="margin:4px 0; font-size:14px; color:#1a365d;">${ponto.nome}</h3>` +
-(ponto.foto ? `<img src="${ponto.foto}" class="popup-img" alt="${ponto.nome}">` : '') +
-`<p style="margin:0 0 6px 0; font-size:12px; color:#4a5568;">${textoResumo}</p>` +
-(urlAudio ? `<label style="font-size:11px; font-weight:bold; color:#1a365d;">${t.ouvirHistoria}</label><audio id="${idAudio}" controls src="${urlAudio}"></audio>` : '') +
-`</div>`;
+        let htmlModal = `<div style="max-width:260px; font-family:sans-serif;">` +
+        `<span class="badge-tag ${ponto.balao === 'E' ? 'tag-estrada' : 'tag-urbano'}">${ponto.balao === 'E' ? 'Estrada' : 'Urbano'} (${ponto.raio}m)</span>` +
+        (ponto.categoria ? `<span class="badge-tag tag-categoria">${ponto.categoria}</span>` : '') +
+        `<h3 style="margin:4px 0; font-size:14px; color:#1a365d;">${ponto.nome}</h3>` +
+        (ponto.foto ? `<img src="${ponto.foto}" class="popup-img" alt="${ponto.nome}">` : '') +
+        `<p style="margin:0 0 6px 0; font-size:12px; color:#4a5568;">${textoResumo}</p>` +
+        (urlAudio ? `<label style="font-size:11px; font-weight:bold; color:#1a365d;">${t.ouvirHistoria}</label><audio id="${idAudio}" controls src="${urlAudio}"></audio>` : '') +
+        `</div>`;
 
-const infoWindow = new google.maps.InfoWindow({ content: htmlModal });
-marker.addListener("click", () => {
-if (infoWindowAberta) infoWindowAberta.close();
-infoWindow.open(map, marker);
-infoWindowAberta = infoWindow;
-});
-listaMarcadoresMapa.push({ ponto: ponto, marker: marker, infoWindow: infoWindow });
-});
+        const infoWindow = new google.maps.InfoWindow({ content: htmlModal });
+        marker.addListener("click", () => {
+            if (infoWindowAberta) infoWindowAberta.close();
+            infoWindow.open(map, marker);
+            infoWindowAberta = infoWindow;
+        });
+        listaMarcadoresMapa.push({ ponto: ponto, marker: marker, infoWindow: infoWindow });
+    });
 
-if (pontosHistoricos.length > 0) {
-map.fitBounds(bounds);
-}
-setTimeout(() => { if (map) google.maps.event.trigger(map, "resize"); }, 300);
+    if (pontosHistoricos.length > 0) {
+        map.fitBounds(bounds);
+    }
+    setTimeout(() => { if (map) google.maps.event.trigger(map, "resize"); }, 300);
 }
 
 function gerarBotoesFiltro(lista) {
-const container = document.getElementById('filter-bar');
-let html = `<button class="btn-filter ${categoriaAtiva === 'TODAS' ? 'active' : ''}" onclick="filtrarCategoria('TODAS', this)">${TRADUCOES[idiomaAtual].todasCategorias || '🌐 Todas'}</button>`;
-lista.forEach(cat => {
-html += `<button class="btn-filter ${categoriaAtiva === cat ? 'active' : ''}" onclick="filtrarCategoria('${cat}', this)">${cat}</button>`;
-});
-container.innerHTML = html;
+    const container = document.getElementById('filter-bar');
+    let html = `<button class="btn-filter ${categoriaAtiva === 'TODAS' ? 'active' : ''}" onclick="filtrarCategoria('TODAS', this)">${TRADUCOES[idiomaAtual].todasCategorias || '🌐 Todas'}</button>`;
+    lista.forEach(cat => {
+        html += `<button class="btn-filter ${categoriaAtiva === cat ? 'active' : ''}" onclick="filtrarCategoria('${cat}', this)">${cat}</button>`;
+    });
+    container.innerHTML = html;
 }
 
 function filtrarCategoria(cat, btn) {
-categoriaAtiva = cat;
-document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-btn.classList.add('active');
-plotarPinsNoMapa();
+    categoriaAtiva = cat;
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    plotarPinsNoMapa();
 }
 
 window.onload = () => {
-if (typeof google !== 'undefined') initMap();
-else window.initMap = initMap;
+    if (typeof google !== 'undefined') initMap();
+    else window.initMap = initMap;
 };
 </script>
 </body>
