@@ -12,11 +12,13 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-8YBRS5NX34');
 </script>
-<!-- 🗺️ Google Maps JavaScript API (Insira sua chave no campo YOUR_API_KEY) -->
+<!-- 🗺️ Google Maps JavaScript API -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxjwD6OU5pNjdr-6J9xhc7Ut5E-IzSZYM&v=weekly" async defer></script>
 <style>
+* { box-sizing: border-box; }
 html, body {
 height: 100%;
+width: 100%;
 margin: 0;
 padding: 0;
 font-family: 'Segoe UI', Arial, sans-serif;
@@ -154,8 +156,11 @@ text-align: center;
 background: #edf2f7;
 flex-shrink: 0;
 }
+/* Força a renderização em altura total */
 #map {
 width: 100%;
+height: calc(100vh - 140px);
+min-height: 350px;
 flex-grow: 1;
 background: #e2e8f0;
 }
@@ -206,6 +211,7 @@ margin-bottom: 6px;
 <div id="status-carregamento">🔄 Sincronizando dados com a planilha...</div>
 
 <div id="map"></div>
+
 <script>
 // 🔒 VALIDAÇÃO DE DOMÍNIO PERMITIDO
 (function validarDominioAutorizado() {
@@ -245,7 +251,7 @@ const centroRJ = { lat: -22.9068, lng: -43.1729 };
 map = new google.maps.Map(document.getElementById("map"), {
 zoom: 17,
 center: centroRJ,
-mapTypeId: 'vector',
+mapTypeId: google.maps.MapTypeId.ROADMAP,
 heading: 320,
 tilt: 45,
 mapTypeControl: false,
@@ -292,11 +298,9 @@ if (matchFormula) nomeArquivo = matchFormula[1];
 nomeArquivo = nomeArquivo.replace(/['"]/g, '').trim();
 if (!nomeArquivo) return "";
 
-// Se já contiver o protocolo HTTP/HTTPS ou a pasta relativa, usa diretamente
 if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
 if (nomeArquivo.includes('/')) return nomeArquivo;
 
-// Monta o caminho automático baseado na pasta do idioma
 return `../audios_${lang}/${nomeArquivo}`;
 }
 
@@ -334,15 +338,15 @@ try {
 if (!linha || !linha.c) return;
 const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
 
-let nomePatrimonio = val(0); // Coluna A
+let nomePatrimonio = val(0);
 if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
 
-let latNum = parseFloat(val(1).replace(',', '.')); // Coluna B
-let lngNum = parseFloat(val(2).replace(',', '.')); // Coluna C
-let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U"; // Coluna D
+let latNum = parseFloat(val(1).replace(',', '.'));
+let lngNum = parseFloat(val(2).replace(',', '.'));
+let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
 
 if (!isNaN(latNum) && !isNaN(lngNum)) {
-let cat = val(7) || "Geral"; // Coluna H (Categoria)
+let cat = val(7) || "Geral";
 if (cat !== "Geral") categoriasSet.add(cat);
 
 pontosHistoricos.push({
@@ -351,18 +355,18 @@ nome: nomePatrimonio,
 lat: latNum,
 lng: lngNum,
 balao: tipoBalao,
-raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25), // Coluna G (Raio)
+raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
 categoria: cat,
-foto: formatarLinkImagemDrive(val(8)), // Coluna I (Imagem)
+foto: formatarLinkImagemDrive(val(8)),
 resumo: { 
-    PT: val(4),  // Coluna E
-    EN: val(9),  // Coluna J
-    ES: val(11)  // Coluna L
+    PT: val(4),
+    EN: val(9),
+    ES: val(11)
 },
 audioArquivo: { 
-    PT: resolverCaminhoAudio(val(5), 'PT'),   // Coluna F
-    EN: resolverCaminhoAudio(val(10), 'EN'),  // Coluna K
-    ES: resolverCaminhoAudio(val(12), 'ES')   // Coluna M
+    PT: resolverCaminhoAudio(val(5), 'PT'),
+    EN: resolverCaminhoAudio(val(10), 'EN'),
+    ES: resolverCaminhoAudio(val(12), 'ES')
 }
 });
 }
@@ -423,7 +427,10 @@ infoWindowAberta = infoWindow;
 listaMarcadoresMapa.push({ ponto: ponto, marker: marker, infoWindow: infoWindow });
 });
 
-if (pontosHistoricos.length > 0) map.fitBounds(bounds);
+if (pontosHistoricos.length > 0) {
+map.fitBounds(bounds);
+}
+setTimeout(() => { if (map) google.maps.event.trigger(map, "resize"); }, 300);
 }
 
 function gerarBotoesFiltro(lista) {
