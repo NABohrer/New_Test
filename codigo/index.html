@@ -249,11 +249,12 @@ let listaCategoriasEncontradas = [];
 let infoWindowAberta = null;
 let modo3DAtivo = false;
 
-// Controle de GPS e Tour Presencial
+// Controle de GPS, Tour e Linha Guia
 let marcadorUsuario = null;
 let watchGpsId = null;
 let tourPresencialAtivo = false;
 let pontosTocadosTour = new Set();
+let linhaConectora = null; // 📏 Linha de distância até o ponto mais próximo
 
 const TRADUCOES = {
 PT: { tour: "🚀 Iniciar Tour Presencial", tourParar: "🛑 Parar Tour Presencial", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", visao2D: "🗺️ Mapa 2D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
@@ -267,7 +268,7 @@ function initMap() {
         zoom: 16,
         center: centroRJ,
         mapId: 'b274d14dcc2c76461c96b2d9',
-        mapTypeId: 'roadmap', // 🗺️ ENTRA POR PADRÃO NO MAPA TRADICIONAL 2D
+        mapTypeId: 'roadmap',
         heading: 0,
         tilt: 0,
         mapTypeControl: false,
@@ -278,20 +279,19 @@ function initMap() {
     carregarDadosPlanilha();
 }
 
-// 🏙️ ALTERNÂNCIA REAL ENTRE MAPA TRADICIONAL 2D E SATÉLITE 3D
 function alternarVisao3D() {
     if (!map) return;
     modo3DAtivo = !modo3DAtivo;
     const btn3d = document.getElementById('btn-3d-txt');
     
     if (modo3DAtivo) {
-        map.setMapTypeId('hybrid'); // Foto de Satélite + Nomes
+        map.setMapTypeId('hybrid');
         map.setTilt(45);
         map.setHeading(320);
         map.setZoom(18);
         btn3d.innerText = TRADUCOES[idiomaAtual].visao2D;
     } else {
-        map.setMapTypeId('roadmap'); // Mapa Tradicional
+        map.setMapTypeId('roadmap');
         map.setTilt(0);
         map.setHeading(0);
         map.setZoom(16);
@@ -299,7 +299,6 @@ function alternarVisao3D() {
     }
 }
 
-// 📍 FUNÇÃO "ONDE ESTOU" (GPS EM TEMPO REAL)
 function centralizarNoUsuario() {
     if (!navigator.geolocation) {
         alert("Geolocalização não é suportada pelo seu navegador.");
@@ -313,26 +312,9 @@ function centralizarNoUsuario() {
                 lng: posicao.coords.longitude
             };
 
-            if (!marcadorUsuario) {
-                marcadorUsuario = new google.maps.Marker({
-                    position: pos,
-                    map: map,
-                    title: "Sua Localização",
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        scale: 8,
-                        fillColor: "#2980b9",
-                        fillOpacity: 1,
-                        strokeColor: "#ffffff",
-                        strokeWeight: 2,
-                    }
-                });
-            } else {
-                marcadorUsuario.setPosition(pos);
-            }
-
+            atualizarMarcadorUsuario(pos);
             map.setCenter(pos);
-            map.setZoom(18);
+            map.setZoom(17);
         },
         () => {
             alert("Não foi possível obter sua localização. Verifique as permissões do GPS.");
@@ -341,7 +323,26 @@ function centralizarNoUsuario() {
     );
 }
 
-// 🚀 FUNÇÃO "INICIAR TOUR PRESENCIAL" (GEOFENCING E AUTO-PLAY DE ÁUDIO)
+function atualizarMarcadorUsuario(pos) {
+    if (!marcadorUsuario) {
+        marcadorUsuario = new google.maps.Marker({
+            position: pos,
+            map: map,
+            title: "Sua Localização",
+            icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "#e74c3c",
+                fillOpacity: 1,
+                strokeColor: "#ffffff",
+                strokeWeight: 2,
+            }
+        });
+    } else {
+        marcadorUsuario.setPosition(pos);
+    }
+}
+
 function iniciarTourPresencial() {
     tourPresencialAtivo = !tourPresencialAtivo;
     const btnTour = document.getElementById('btn-tour-txt');
@@ -355,10 +356,9 @@ function iniciarTourPresencial() {
             watchGpsId = navigator.geolocation.watchPosition(
                 verificarProximidadePontos,
                 (err) => console.log("Erro no GPS do Tour:", err),
-                { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+                { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
             );
         }
-        alert("Tour Presencial Ativado! Caminhe pelas ruas do Rio: o aplicativo abrirá os pontos e tocará os áudios automaticamente conforme você se aproximar.");
     } else {
         btnTour.classList.remove('ativo');
         btnTour.innerText = TRADUCOES[idiomaAtual].tour;
@@ -366,13 +366,15 @@ function iniciarTourPresencial() {
             navigator.geolocation.clearWatch(watchGpsId);
             watchGpsId = null;
         }
-        alert("Tour Presencial Desativado.");
+        if (linhaConectora) {
+            linhaConectora.setMap(null);
+            linhaConectora = null;
+        }
     }
 }
 
-// CÁLCULO DE DISTÂNCIA ENTRE O USUÁRIO E OS PONTOS (Fórmula de Haversine em metros)
 function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
-    const R = 6371e3; // Raio da Terra em metros
+    const R = 6371e3;
     const rad = Math.PI / 180;
     const dLat = (lat2 - lat1) * rad;
     const dLon = (lon2 - lon1) * rad;
@@ -387,20 +389,25 @@ function verificarProximidadePontos(posicao) {
     if (!tourPresencialAtivo) return;
     const userLat = posicao.coords.latitude;
     const userLng = posicao.coords.longitude;
+    const userPos = { lat: userLat, lng: userLng };
 
-    // Atualiza marcador de posição
-    if (marcadorUsuario) {
-        marcadorUsuario.setPosition({ lat: userLat, lng: userLng });
-    }
+    atualizarMarcadorUsuario(userPos);
 
+    let pontoMaisProximo = null;
+    let menorDistancia = Infinity;
+
+    // Procura o ponto mais próximo de onde o usuário está agora
     pontosHistoricos.forEach(ponto => {
-        if (pontosTocadosTour.has(ponto.id)) return; // Já tocou neste tour
-
         const dist = calcularDistanciaMetros(userLat, userLng, ponto.lat, ponto.lng);
-        if (dist <= ponto.raio) { // Dentro do raio configurado na planilha (25m ou 150m)
+        if (dist < menorDistancia) {
+            menorDistancia = dist;
+            pontoMaisProximo = ponto;
+        }
+
+        // Checagem de Geofencing (Abertura e áudio automático)
+        if (!pontosTocadosTour.has(ponto.id) && dist <= ponto.raio) {
             pontosTocadosTour.add(ponto.id);
 
-            // Procura o marcador e aciona o clique automático
             const itemMapa = listaMarcadoresMapa.find(m => m.ponto.id === ponto.id);
             if (itemMapa) {
                 if (infoWindowAberta) infoWindowAberta.close();
@@ -408,16 +415,53 @@ function verificarProximidadePontos(posicao) {
                 infoWindowAberta = itemMapa.infoWindow;
                 map.panTo({ lat: ponto.lat, lng: ponto.lng });
 
-                // Dispara o áudio automaticamente
                 setTimeout(() => {
                     const elAudio = document.getElementById(`audio-ponto-${ponto.id}`);
                     if (elAudio) {
-                        elAudio.play().catch(e => console.log("Bloqueio de autostart de áudio pelo navegador:", e));
+                        elAudio.play().catch(e => console.log("Bloqueio de autostart:", e));
                     }
                 }, 500);
             }
         }
     });
+
+    // 📏 DESENHA / ATUALIZA A LINHA TRACEJADA ATÉ O PONTO MAIS PRÓXIMO
+    if (pontoMaisProximo) {
+        const rotaCoords = [
+            userPos,
+            { lat: pontoMaisProximo.lat, lng: pontoMaisProximo.lng }
+        ];
+
+        if (!linhaConectora) {
+            const lineSymbol = {
+                path: 'M 0,-1 0,1',
+                strokeOpacity: 1,
+                scale: 3
+            };
+            linhaConectora = new google.maps.Polyline({
+                path: rotaCoords,
+                strokeColor: '#e67e22',
+                strokeOpacity: 0,
+                icons: [{
+                    icon: lineSymbol,
+                    offset: '0',
+                    repeat: '10px'
+                }],
+                map: map
+            });
+        } else {
+            linhaConectora.setPath(rotaCoords);
+            linhaConectora.setMap(map);
+        }
+
+        // Atualiza a barra de status informando a distância
+        const distTexto = menorDistancia > 1000 
+            ? `${(menorDistancia / 1000).toFixed(1)} km` 
+            : `${Math.round(menorDistancia)} meters`;
+        
+        document.getElementById("status-carregamento").innerHTML = 
+            `🚶 Ponto mais próximo: <b>${pontoMaisProximo.nome}</b> (${distTexto})`;
+    }
 }
 
 function trocarIdioma(lang) {
