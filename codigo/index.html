@@ -3,648 +3,722 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Plataforma hip.hop - Rio de Janeiro</title>
+<title>Plataforma hip.hop - Engine Multilíngue</title>
+
 <!-- 📊 Google Analytics 4 (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8YBRS5NX34"></script>
 <script>
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-8YBRS5NX34');
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-8YBRS5NX34');
 </script>
-<!-- 🗺️ Google Maps JavaScript API -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxjwD6OU5pNjdr-6J9xhc7Ut5E-IzSZYM&v=weekly&callback=initMap" async defer></script>
+
+<!-- 🗺️ Leaflet CSS & JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <style>
-* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 html, body {
-height: 100%;
-width: 100%;
-margin: 0;
-padding: 0;
-font-family: 'Segoe UI', Arial, sans-serif;
-background: #f7fafc;
-color: #2d3748;
-display: flex;
-flex-direction: column;
-overflow: hidden;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f7fafc;
+  color: #2d3748;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
 /* Cabeçalho */
 #header {
-background: #1a365d;
-color: white;
-padding: 8px 12px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-flex-shrink: 0;
-display: flex;
-align-items: center;
-justify-content: space-between;
+  background: #1a365d;
+  color: white;
+  padding: 8px 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .header-left {
-display: flex;
-align-items: center;
-gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .header-logo {
-height: 36px;
-width: auto;
-object-fit: contain;
+  height: 36px;
+  width: auto;
+  object-fit: contain;
 }
 .header-text h2 { margin: 0; font-size: 14px; letter-spacing: 0.5px; }
 .header-text p { margin: 1px 0 0 0; font-size: 10px; color: #bee3f8; }
+
 /* Seletor de Idiomas */
 .lang-selector {
-display: flex;
-gap: 4px;
+  display: flex;
+  gap: 4px;
 }
 .btn-lang {
-background: rgba(255,255,255,0.15);
-color: white;
-border: 1px solid rgba(255,255,255,0.3);
-padding: 4px 8px;
-font-size: 11px;
-font-weight: bold;
-border-radius: 4px;
-cursor: pointer;
-transition: all 0.2s;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 .btn-lang.active {
-background: #e67e22;
-border-color: #e67e22;
+  background: #e67e22;
+  border-color: #e67e22;
 }
+
 /* Barra de Controle */
 #tour-control {
-background: #ffffff;
-padding: 8px 12px;
-box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-text-align: center;
-flex-shrink: 0;
-border-bottom: 1px solid #e2e8f0;
-z-index: 1000;
-display: flex;
-gap: 6px;
+  background: #ffffff;
+  padding: 8px 12px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  text-align: center;
+  flex-shrink: 0;
+  border-bottom: 1px solid #e2e8f0;
+  z-index: 1000;
+  display: flex;
+  gap: 8px;
 }
 .btn-tour {
-background: #e67e22;
-color: white;
-border: none;
-padding: 10px 8px;
-font-size: 12px;
-font-weight: bold;
-border-radius: 6px;
-cursor: pointer;
-flex: 2;
-transition: background 0.2s;
+  background: #e67e22;
+  color: white;
+  border: none;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 2;
+  box-sizing: border-box;
+  transition: background 0.2s;
+  text-align: center;
+  display: block;
 }
-.btn-tour.ativo {
-background: #c0392b !important;
-animation: pulse 1.5s infinite;
-}
+.btn-tour:active { background: #d35400; }
+
 .btn-localizacao {
-background: #2b6cb0;
-color: white;
-border: none;
-padding: 10px 8px;
-font-size: 12px;
-font-weight: bold;
-border-radius: 6px;
-cursor: pointer;
-flex: 1;
-transition: background 0.2s;
+  background: #2b6cb0;
+  color: white;
+  border: none;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 1;
+  box-sizing: border-box;
+  transition: background 0.2s;
+  text-align: center;
+  display: block;
 }
-.btn-3d {
-background: #27ae60;
-color: white;
-border: none;
-padding: 10px 8px;
-font-size: 12px;
-font-weight: bold;
-border-radius: 6px;
-cursor: pointer;
-flex: 1;
-transition: background 0.2s;
-}
-@keyframes pulse {
-0% { opacity: 1; }
-50% { opacity: 0.6; }
-100% { opacity: 1; }
-}
+.btn-localizacao:active { background: #2c5282; }
+
 /* Filtros de Categoria */
 #filter-bar {
-background: #edf2f7;
-padding: 6px 12px;
-display: flex;
-gap: 6px;
-overflow-x: auto;
-white-space: nowrap;
-border-bottom: 1px solid #cbd5e0;
-flex-shrink: 0;
--webkit-overflow-scrolling: touch;
+  background: #edf2f7;
+  padding: 6px 12px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  border-bottom: 1px solid #cbd5e0;
+  flex-shrink: 0;
+  -webkit-overflow-scrolling: touch;
 }
 #filter-bar::-webkit-scrollbar { display: none; }
 .btn-filter {
-background: #ffffff;
-color: #4a5568;
-border: 1px solid #cbd5e0;
-padding: 4px 10px;
-font-size: 11px;
-font-weight: 600;
-border-radius: 12px;
-cursor: pointer;
+  background: #ffffff;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 .btn-filter.active {
-background: #1a365d;
-color: white;
-border-color: #1a365d;
+  background: #1a365d;
+  color: white;
+  border-color: #1a365d;
 }
+
+/* Status de Carregamento */
 #status-carregamento {
-font-size: 11px;
-font-weight: 600;
-color: #4a5568;
-padding: 6px;
-text-align: center;
-background: #edf2f7;
-flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4a5568;
+  padding: 6px;
+  text-align: center;
+  background: #edf2f7;
+  flex-shrink: 0;
+  line-height: 1.4;
 }
-/* Contêiner do Mapa */
+
 #map {
-width: 100%;
-height: calc(100vh - 140px);
-min-height: 350px;
-flex-grow: 1;
-background: #e2e8f0;
+  width: 100%;
+  flex-grow: 1;
+  background: #e2e8f0;
 }
-/* Badges e Mídia */
-audio { width: 100%; height: 36px; margin-top: 6px; }
+
+/* Popups Leaflet */
+.leaflet-popup-content-wrapper {
+  padding: 8px !important;
+  border-radius: 8px !important;
+  max-width: 300px !important;
+}
+.leaflet-popup-content {
+  margin: 4px !important;
+  line-height: 1.4 !important;
+}
+audio {
+  width: 100%;
+  height: 36px;
+  margin-top: 6px;
+  outline: none;
+}
 .badge-tag {
-display: inline-block;
-padding: 2px 6px;
-font-size: 10px;
-font-weight: bold;
-border-radius: 4px;
-color: white;
-margin-bottom: 4px;
+  display: inline-block;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 4px;
+  color: white;
+  margin-bottom: 4px;
 }
 .tag-estrada { background-color: #27ae60; }
 .tag-urbano { background-color: #2b6cb0; }
 .tag-categoria { background-color: #8e44ad; margin-left: 4px; }
+
+.user-location-marker {
+  background-color: #4285F4;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(0,0,0,0.4);
+}
 .popup-img {
-width: 100%;
-max-height: 140px;
-object-fit: cover;
-border-radius: 6px;
-margin-bottom: 6px;
+  width: 100%;
+  max-height: 150px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  display: block;
 }
 </style>
 </head>
 <body>
+
 <div id="header">
-<div class="header-left">
-<img src="../baloes/Logo_hiphop.png" alt="Logo hip.hop" class="header-logo">
-<div class="header-text">
-<h2>Plataforma hip.hop 3D</h2>
-<p>DYART - Business Intelligence (Rio de Janeiro)</p>
+  <div class="header-left">
+    <img src="../baloes/Logo_hiphop.png" alt="Logo hip.hop" class="header-logo">
+    <div class="header-text">
+      2.0 Versão Multilíngue</h2>
+      <p>DYART - Business Intelligence</p>
+    </div>
+  </div>
+  <div class="lang-selector">
+    <button class="btn-lang active" id="btn-pt" onclick="trocarIdioma('PT')">PT</button>
+    <button class="btn-lang" id="btn-en" onclick="trocarIdioma('EN')">EN</button>
+    <button class="btn-lang" id="btn-es" onclick="trocarIdioma('ES')">ES</button>
+  </div>
 </div>
-</div>
-<div class="lang-selector">
-<button class="btn-lang active" id="btn-pt" onclick="trocarIdioma('PT')">PT</button>
-<button class="btn-lang" id="btn-en" onclick="trocarIdioma('EN')">EN</button>
-<button class="btn-lang" id="btn-es" onclick="trocarIdioma('ES')">ES</button>
-</div>
-</div>
+
 <div id="tour-control">
-<button id="btn-tour-txt" class="btn-tour" onclick="iniciarTourPresencial()">🚀 Iniciar Tour Presencial</button>
-<button id="btn-gps-txt" class="btn-localizacao" onclick="centralizarNoUsuario()">📍 Onde estou</button>
-<button id="btn-3d-txt" class="btn-3d" onclick="alternarVisao3D()">🏙️ Visão 3D</button>
+  <button id="btn-tour-txt" class="btn-tour" onclick="iniciarTourPresencial()">🚀 Iniciar Tour Presencial</button>
+  <button id="btn-gps-txt" class="btn-localizacao" onclick="centralizarNoUsuario()">📍 Onde estou</button>
 </div>
+
 <div id="filter-bar"></div>
+
 <div id="status-carregamento">🔄 Sincronizando dados com a planilha...</div>
 
 <div id="map"></div>
 
 <script>
-// 🛡️ PROTEÇÃO 1: BLOQUEIO DE BOTÃO DIREITO E TECLAS DE INSPEÇÃO (F12/CTRL+U)
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-    if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-        e.preventDefault();
-    }
-});
-
-// 🛡️ PROTEÇÃO 2: VALIDAÇÃO DE DOMÍNIO PERMITIDO
-(function validarDominioAutorizado() {
-    const dominiosPermitidos = ['nabohrer.github.io', 'dyart.github.io', 'localhost', '127.0.0.1'];
-    const hostAtual = window.location.hostname.toLowerCase();
-    const autorizado = dominiosPermitidos.some(d => hostAtual === d || hostAtual.endsWith('.' + d));
-    
-    if (!autorizado) {
-        document.body.innerHTML = `
-            <div style="padding: 40px; text-align: center; font-family: sans-serif; background: #fff; height: 100vh;">
-                <h2 style="color: #c0392b;">⚠️ Acesso Não Autorizado</h2>
-                <p>Ambiente de validação restrito.</p>
-            </div>`;
-        throw new Error("Execução interrompida: Domínio não autorizado.");
-    }
-})();
-
-const LINK_DA_PLANILHA = 'https://docs.google.com/spreadsheets/d/1cHfaZWEXlhhzFKGpR3KqvkIqcLAitNOdYuhUNXysESg/edit?usp=sharing';
+const LINK_DA_PLANILHA = 'https://docs.google.com/spreadsheets/d/1o-zFjux3l5nkL83PsruG9ngLoEwPPe9NvEhd1kWRwPQ/edit?usp=sharing';
 
 let map;
 let pontosHistoricos = [];
+let marcadorUsuario = null;
+let posAtualUsuario = null;
+let idMonitoramentoGPS = null;
 let listaMarcadoresMapa = [];
+let ultimoPontoTocadoId = null;
+let tourIniciado = false;
 let categoriaAtiva = "TODAS";
 let idiomaAtual = "PT";
 let listaCategoriasEncontradas = [];
-let infoWindowAberta = null;
-let modo3DAtivo = false;
-
-// Controle de GPS, Tour e Linha Guia
-let marcadorUsuario = null;
-let watchGpsId = null;
-let tourPresencialAtivo = false;
-let pontosTocadosTour = new Set();
-let linhaConectora = null;
 
 const TRADUCOES = {
-PT: { tour: "🚀 Iniciar Tour Presencial", tourParar: "🛑 Parar Tour Presencial", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", visao2D: "🗺️ Mapa 2D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
-EN: { tour: "🚀 Start Live Tour", tourParar: "🛑 Stop Live Tour", gps: "📍 My Location", visao3D: "🏙️ 3D View", visao2D: "🗺️ 2D Map", carregados: "✅ {qtd} RJ spots loaded", ouvirHistoria: "🎵 Listen to Story:" },
-ES: { tour: "🚀 Iniciar Recorrido", tourParar: "🛑 Detener Recorrido", gps: "📍 Mi Ubicación", visao3D: "🏙️ Vista 3D", visao2D: "🗺️ Mapa 2D", carregados: "✅ {qtd} puntos en RJ cargados", ouvirHistoria: "🎵 Escuchar Historia:" }
+  PT: {
+    tour: "🚀 Iniciar Tour Presencial",
+    gps: "📍 Onde estou",
+    sincronizando: "🔄 Sincronizando dados com a planilha...",
+    carregados: "✅ {qtd} pontos carregados (Urbano: {u} | Estrada: {e})",
+    erroPlanilha: "❌ Erro na sincronização dos dados da planilha.",
+    todasCategorias: "🌐 Todas",
+    ouvirHistoria: "🎵 Ouvir História:",
+    noRaio: "📍 {modo} Dentro do raio de: \"{nome}\" ({dist}m)",
+    deslocamento: "🚗 Em deslocamento... Próximo: \"{nome}\" ({dist}m)",
+    semGPS: "Não foi possível obter sua localização atual.",
+    ativeGPS: "Por favor, ative a localização/GPS para iniciar o tour."
+  },
+  EN: {
+    tour: "🚀 Start Tour",
+    gps: "📍 My Location",
+    sincronizando: "🔄 Syncing data with spreadsheet...",
+    carregados: "✅ {qtd} spots loaded (Urban: {u} | Trail: {e})",
+    erroPlanilha: "❌ Error syncing spreadsheet data.",
+    todasCategorias: "🌐 All",
+    ouvirHistoria: "🎵 Listen to Story:",
+    noRaio: "📍 {modo} Inside zone: \"{nome}\" ({dist}m)",
+    deslocamento: "🚗 On the move... Next: \"{nome}\" ({dist}m)",
+    semGPS: "Could not fetch your location.",
+    ativeGPS: "Please enable GPS/location to start the tour."
+  },
+  ES: {
+    tour: "🚀 Iniciar Recorrido",
+    gps: "📍 Mi Ubicación",
+    sincronizando: "🔄 Sincronizando datos con la planilla...",
+    carregados: "✅ {qtd} puntos cargados (Urbano: {u} | Carretera: {e})",
+    erroPlanilha: "❌ Error en la sincronización de datos.",
+    todasCategorias: "🌐 Todas",
+    ouvirHistoria: "🎵 Escuchar Historia:",
+    noRaio: "📍 {modo} Dentro del radio de: \"{nome}\" ({dist}m)",
+    deslocamento: "🚗 En desplazamiento... Próximo: \"{nome}\" ({dist}m)",
+    semGPS: "No se pudo obtener su ubicación actual.",
+    ativeGPS: "Por favor, active su ubicación/GPS para iniciar."
+  }
 };
 
-function initMap() {
-    const centroRJ = { lat: -22.9068, lng: -43.1729 };
-    map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 16,
-        center: centroRJ,
-        mapId: 'b274d14dcc2c76461c96b2d9',
-        mapTypeId: 'roadmap',
-        heading: 0,
-        tilt: 0,
-        mapTypeControl: false,
-        streetViewControl: true,
-        fullscreenControl: false
-    });
-    modo3DAtivo = false;
-    carregarDadosPlanilha();
-}
-
-function alternarVisao3D() {
-    if (!map) return;
-    modo3DAtivo = !modo3DAtivo;
-    const btn3d = document.getElementById('btn-3d-txt');
-    
-    if (modo3DAtivo) {
-        map.setMapTypeId('hybrid');
-        map.setTilt(45);
-        map.setHeading(320);
-        map.setZoom(18);
-        btn3d.innerText = TRADUCOES[idiomaAtual].visao2D;
-    } else {
-        map.setMapTypeId('roadmap');
-        map.setTilt(0);
-        map.setHeading(0);
-        map.setZoom(16);
-        btn3d.innerText = TRADUCOES[idiomaAtual].visao3D;
-    }
-}
-
-function centralizarNoUsuario() {
-    if (!navigator.geolocation) {
-        alert("Geolocalização não é suportada pelo seu navegador.");
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (posicao) => {
-            const pos = {
-                lat: posicao.coords.latitude,
-                lng: posicao.coords.longitude
-            };
-
-            atualizarMarcadorUsuario(pos);
-            map.setCenter(pos);
-            map.setZoom(17);
-        },
-        () => {
-            alert("Não foi possível obter sua localização. Verifique as permissões do GPS.");
-        },
-        { enableHighAccuracy: true }
-    );
-}
-
-function atualizarMarcadorUsuario(pos) {
-    if (!marcadorUsuario) {
-        marcadorUsuario = new google.maps.Marker({
-            position: pos,
-            map: map,
-            title: "Sua Localização",
-            icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: "#e74c3c",
-                fillOpacity: 1,
-                strokeColor: "#ffffff",
-                strokeWeight: 2,
-            }
-        });
-    } else {
-        marcadorUsuario.setPosition(pos);
-    }
-}
-
-function iniciarTourPresencial() {
-    tourPresencialAtivo = !tourPresencialAtivo;
-    const btnTour = document.getElementById('btn-tour-txt');
-
-    if (tourPresencialAtivo) {
-        btnTour.classList.add('ativo');
-        btnTour.innerText = TRADUCOES[idiomaAtual].tourParar;
-        pontosTocadosTour.clear();
-
-        if (navigator.geolocation) {
-            watchGpsId = navigator.geolocation.watchPosition(
-                verificarProximidadePontos,
-                (err) => console.log("Erro no GPS do Tour:", err),
-                { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
-            );
-        }
-    } else {
-        btnTour.classList.remove('ativo');
-        btnTour.innerText = TRADUCOES[idiomaAtual].tour;
-        if (watchGpsId !== null) {
-            navigator.geolocation.clearWatch(watchGpsId);
-            watchGpsId = null;
-        }
-        if (linhaConectora) {
-            linhaConectora.setMap(null);
-            linhaConectora = null;
-        }
-    }
-}
-
-function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
-    const R = 6371e3;
-    const rad = Math.PI / 180;
-    const dLat = (lat2 - lat1) * rad;
-    const dLon = (lon2 - lon1) * rad;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
-
-function verificarProximidadePontos(posicao) {
-    if (!tourPresencialAtivo) return;
-    const userLat = posicao.coords.latitude;
-    const userLng = posicao.coords.longitude;
-    const userPos = { lat: userLat, lng: userLng };
-
-    atualizarMarcadorUsuario(userPos);
-
-    let pontoMaisProximo = null;
-    let menorDistancia = Infinity;
-
-    pontosHistoricos.forEach(ponto => {
-        const dist = calcularDistanciaMetros(userLat, userLng, ponto.lat, ponto.lng);
-        if (dist < menorDistancia) {
-            menorDistancia = dist;
-            pontoMaisProximo = ponto;
-        }
-
-        if (!pontosTocadosTour.has(ponto.id) && dist <= ponto.raio) {
-            pontosTocadosTour.add(ponto.id);
-
-            const itemMapa = listaMarcadoresMapa.find(m => m.ponto.id === ponto.id);
-            if (itemMapa) {
-                if (infoWindowAberta) infoWindowAberta.close();
-                itemMapa.infoWindow.open(map, itemMapa.marker);
-                infoWindowAberta = itemMapa.infoWindow;
-                map.panTo({ lat: ponto.lat, lng: ponto.lng });
-
-                setTimeout(() => {
-                    const elAudio = document.getElementById(`audio-ponto-${ponto.id}`);
-                    if (elAudio) {
-                        elAudio.play().catch(e => console.log("Bloqueio de autostart:", e));
-                    }
-                }, 500);
-            }
-        }
-    });
-
-    if (pontoMaisProximo) {
-        const rotaCoords = [
-            userPos,
-            { lat: pontoMaisProximo.lat, lng: pontoMaisProximo.lng }
-        ];
-
-        if (!linhaConectora) {
-            const lineSymbol = {
-                path: 'M 0,-1 0,1',
-                strokeOpacity: 1,
-                scale: 3
-            };
-            linhaConectora = new google.maps.Polyline({
-                path: rotaCoords,
-                strokeColor: '#e67e22',
-                strokeOpacity: 0,
-                icons: [{
-                    icon: lineSymbol,
-                    offset: '0',
-                    repeat: '10px'
-                }],
-                map: map
-            });
-        } else {
-            linhaConectora.setPath(rotaCoords);
-            linhaConectora.setMap(map);
-        }
-
-        const distTexto = menorDistancia > 1000 
-            ? `${(menorDistancia / 1000).toFixed(1)} km` 
-            : `${Math.round(menorDistancia)} meters`;
-        
-        document.getElementById("status-carregamento").innerHTML = 
-            `🚶 Ponto mais próximo: <b>${pontoMaisProximo.nome}</b> (${distTexto})`;
-    }
-}
-
 function trocarIdioma(lang) {
-    idiomaAtual = lang;
-    document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(`btn-${lang.toLowerCase()}`).classList.add('active');
-    const t = TRADUCOES[lang];
-    document.getElementById('btn-tour-txt').innerText = tourPresencialAtivo ? t.tourParar : t.tour;
-    document.getElementById('btn-gps-txt').innerText = t.gps;
-    document.getElementById('btn-3d-txt').innerText = modo3DAtivo ? t.visao2D : t.visao3D;
-    gerarBotoesFiltro(listaCategoriasEncontradas);
-    plotarPinsNoMapa();
+  idiomaAtual = lang;
+  
+  document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
+  if (lang === 'PT') document.getElementById('btn-pt').classList.add('active');
+  if (lang === 'EN') document.getElementById('btn-en').classList.add('active');
+  if (lang === 'ES') document.getElementById('btn-es').classList.add('active');
+
+  const t = TRADUCOES[lang];
+  document.getElementById('btn-tour-txt').innerText = t.tour;
+  document.getElementById('btn-gps-txt').innerText = t.gps;
+
+  gerarBotoesFiltro(listaCategoriasEncontradas);
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'change_language', { 'language': lang });
+  }
+
+  plotarPinsNoMapa();
 }
 
 function resolverCaminhoAudio(rawInput, lang) {
-    if (!rawInput) return "";
-    let nomeArquivo = String(rawInput).trim();
-    if (nomeArquivo.includes('="') || nomeArquivo.includes('("')) {
-        const matchFormula = nomeArquivo.match(/"([^"\\]+)"/);
-        if (matchFormula) nomeArquivo = matchFormula[1];
-    }
-    nomeArquivo = nomeArquivo.replace(/['"]/g, '').trim();
-    if (!nomeArquivo) return "";
+  if (!rawInput) return "";
+  let url = String(rawInput).trim();
 
-    if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
-    if (nomeArquivo.includes('/')) return nomeArquivo;
+  // Se a planilha enviou fórmula ou hiperlink embutido
+  if (url.includes('="') || url.includes('("')) {
+    const matchFormula = url.match(/"([^"\\]+)"/);
+    if (matchFormula) url = matchFormula[1];
+  }
 
-    return `../audios_${lang}/${nomeArquivo}`;
+  url = url.replace(/['"]/g, '').trim();
+
+  // Se já for uma URL completa (HTTPS)
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+
+  // Compatibilidade com fallback local caso haja nomes simples soltos
+  if (!url.toLowerCase().endsWith('.mp3')) {
+    url += '.mp3';
+  }
+
+  let pasta = "../audios/";
+  if (lang === "EN") pasta = "../audios_EN/";
+  if (lang === "ES") pasta = "../audios_ES/";
+
+  return pasta + url;
 }
 
 function formatarLinkImagemDrive(url) {
-    if (!url) return "";
-    let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
-    return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : url.trim();
+  if (!url || url.trim() === "") return "";
+  let link = url.trim();
+
+  let match = link.match(/\/d\/([a-zA-Z0-9-_]+)/) || link.match(/id=([a-zA-Z0-9-_]+)/);
+  if (match && match[1]) {
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
+  }
+  return link;
+}
+
+function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
 function extrairIdPlanilha(url) {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return match ? match[1] : null;
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
 }
 
 async function carregarDadosPlanilha() {
-    const spreadsheetId = extrairIdPlanilha(LINK_DA_PLANILHA);
-    if (!spreadsheetId) {
-        document.getElementById("status-carregamento").innerHTML = "❌ ID da Planilha inválido.";
-        return;
-    }
+  const spreadsheetId = extrairIdPlanilha(LINK_DA_PLANILHA);
+  if (!spreadsheetId) return;
 
-    try {
-        const urlGviz = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?gid=0&tqx=out:json`;
-        const resposta = await fetch(urlGviz);
-        const textoCompleto = await resposta.text();
-        const jsonPuro = JSON.parse(textoCompleto.substring(textoCompleto.indexOf('{'), textoCompleto.lastIndexOf('}') + 1));
-        const linhas = jsonPuro.table.rows;
+  try {
+    const urlGviz = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?gid=0&tqx=out:json`;
+    const resposta = await fetch(urlGviz);
+    const textoCompleto = await resposta.text();
+    const jsonPuro = JSON.parse(textoCompleto.substring(textoCompleto.indexOf('{'), textoCompleto.lastIndexOf('}') + 1));
+    const linhas = jsonPuro.table.rows;
 
-        pontosHistoricos = [];
-        let contadorId = 1;
-        let categoriasSet = new Set();
+    pontosHistoricos = [];
+    let contadorId = 1;
+    let totalUrbano = 0;
+    let totalEstrada = 0;
+    let categoriasSet = new Set();
 
-        linhas.forEach((linha) => {
-            try {
-                if (!linha || !linha.c) return;
-                const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
+    linhas.forEach((linha) => {
+      try {
+        if (!linha || !linha.c) return;
 
-                let nomePatrimonio = val(0);
-                if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
+        const val = (idx) => {
+          if (!linha.c[idx]) return "";
+          const c = linha.c[idx];
+          if (c.v !== undefined && c.v !== null) return String(c.v).trim();
+          if (c.f !== undefined && c.f !== null) return String(c.f).trim();
+          return "";
+        };
 
-                let latNum = parseFloat(val(1).replace(',', '.'));
-                let lngNum = parseFloat(val(2).replace(',', '.'));
-                let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
+        let nomePatrimonio = val(0);
+        const nomeLower = nomePatrimonio.toLowerCase();
+        if (!nomePatrimonio || nomeLower.includes("patrimônio") || nomeLower.includes("monumento") || nomeLower === "nome") {
+          return;
+        }
 
-                if (!isNaN(latNum) && !isNaN(lngNum)) {
-                    let cat = val(7) || "Geral";
-                    if (cat !== "Geral") categoriasSet.add(cat);
+        let latRaw = val(1).replace(',', '.').replace(/[^\d.-]/g, '');
+        let lngRaw = val(2).replace(',', '.').replace(/[^\d.-]/g, '');
+        let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
 
-                    pontosHistoricos.push({
-                        id: contadorId++,
-                        nome: nomePatrimonio,
-                        lat: latNum,
-                        lng: lngNum,
-                        balao: tipoBalao,
-                        raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
-                        categoria: cat,
-                        foto: formatarLinkImagemDrive(val(8)),
-                        resumo: { 
-                            PT: val(4),
-                            EN: val(9),
-                            ES: val(11)
-                        },
-                        audioArquivo: { 
-                            PT: resolverCaminhoAudio(val(5), 'PT'),
-                            EN: resolverCaminhoAudio(val(10), 'EN'),
-                            ES: resolverCaminhoAudio(val(12), 'ES')
-                        }
-                    });
-                }
-            } catch (e) {}
-        });
+        let resumoPT = val(4);
+        let audioPT = val(5);
+        
+        let raioVal = parseInt(val(6));
+        let raioEfetivo = isNaN(raioVal) ? (tipoBalao === "E" ? 150 : 25) : raioVal;
+        
+        let categoriaVal = val(7) || "Geral";
+        if (categoriaVal && categoriaVal !== "Geral") {
+          categoriasSet.add(categoriaVal);
+        }
 
-        document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
-        listaCategoriasEncontradas = Array.from(categoriasSet);
-        gerarBotoesFiltro(listaCategoriasEncontradas);
-        plotarPinsNoMapa();
-    } catch (erro) {
-        document.getElementById("status-carregamento").innerHTML = "❌ Erro ao ler a planilha.";
-    }
-}
+        let linkFoto = formatarLinkImagemDrive(val(8));
+        
+        let resumoEN = val(9);
+        let audioEN = val(10);
+        
+        let resumoES = val(11);
+        let audioES = val(12);
 
-function plotarPinsNoMapa() {
-    if (!map) return;
-    listaMarcadoresMapa.forEach(item => item.marker.setMap(null));
-    listaMarcadoresMapa = [];
-    const bounds = new google.maps.LatLngBounds();
+        let latNum = parseFloat(latRaw);
+        let lngNum = parseFloat(lngRaw);
+
+        if (!isNaN(latNum) && !isNaN(lngNum)) {
+          if (tipoBalao === "E") totalEstrada++; else totalUrbano++;
+
+          pontosHistoricos.push({
+            id: contadorId++,
+            nome: nomePatrimonio,
+            lat: latNum,
+            lng: lngNum,
+            balao: tipoBalao,
+            raio: raioEfetivo,
+            categoria: categoriaVal,
+            foto: linkFoto,
+            resumo: { PT: resumoPT, EN: resumoEN, ES: resumoES },
+            audioArquivo: { PT: audioPT, EN: audioEN, ES: audioES }
+          });
+        }
+      } catch (e) { console.warn("Erro linha:", e); }
+    });
+
     const t = TRADUCOES[idiomaAtual];
+    document.getElementById("status-carregamento").innerHTML = t.carregados.replace('{qtd}', pontosHistoricos.length).replace('{u}', totalUrbano).replace('{e}', totalEstrada);
 
-    pontosHistoricos.forEach(ponto => {
-        if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
-        const iconeUrl = (ponto.balao === 'E') ? '../baloes/Balao_E.png' : '../baloes/Balao_U.png';
-        const pos = { lat: ponto.lat, lng: ponto.lng };
-        bounds.extend(pos);
+    listaCategoriasEncontradas = Array.from(categoriasSet);
+    gerarBotoesFiltro(listaCategoriasEncontradas);
+    plotarPinsNoMapa();
 
-        const marker = new google.maps.Marker({
-            position: pos,
-            map: map,
-            title: ponto.nome,
-            icon: {
-                url: iconeUrl,
-                scaledSize: new google.maps.Size(34, 42)
-            }
-        });
-
-        const textoResumo = ponto.resumo[idiomaAtual] || ponto.resumo['PT'] || '';
-        const urlAudio = ponto.audioArquivo[idiomaAtual] || ponto.audioArquivo['PT'] || '';
-        const idAudio = `audio-ponto-${ponto.id}`;
-
-        let htmlModal = `<div style="max-width:260px; font-family:sans-serif;">` +
-        `<span class="badge-tag ${ponto.balao === 'E' ? 'tag-estrada' : 'tag-urbano'}">${ponto.balao === 'E' ? 'Estrada' : 'Urbano'} (${ponto.raio}m)</span>` +
-        (ponto.categoria ? `<span class="badge-tag tag-categoria">${ponto.categoria}</span>` : '') +
-        `<h3 style="margin:4px 0; font-size:14px; color:#1a365d;">${ponto.nome}</h3>` +
-        (ponto.foto ? `<img src="${ponto.foto}" class="popup-img" alt="${ponto.nome}">` : '') +
-        `<p style="margin:0 0 6px 0; font-size:12px; color:#4a5568;">${textoResumo}</p>` +
-        (urlAudio ? `<label style="font-size:11px; font-weight:bold; color:#1a365d;">${t.ouvirHistoria}</label><audio id="${idAudio}" controls src="${urlAudio}"></audio>` : '') +
-        `</div>`;
-
-        const infoWindow = new google.maps.InfoWindow({ content: htmlModal });
-        marker.addListener("click", () => {
-            if (infoWindowAberta) infoWindowAberta.close();
-            infoWindow.open(map, marker);
-            infoWindowAberta = infoWindow;
-        });
-        listaMarcadoresMapa.push({ ponto: ponto, marker: marker, infoWindow: infoWindow });
-    });
-
-    if (pontosHistoricos.length > 0) {
-        map.fitBounds(bounds);
-    }
-    setTimeout(() => { if (map) google.maps.event.trigger(map, "resize"); }, 300);
+  } catch (erro) {
+    document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].erroPlanilha;
+  }
 }
 
-function gerarBotoesFiltro(lista) {
-    const container = document.getElementById('filter-bar');
-    let html = `<button class="btn-filter ${categoriaAtiva === 'TODAS' ? 'active' : ''}" onclick="filtrarCategoria('TODAS', this)">${TRADUCOES[idiomaAtual].todasCategorias || '🌐 Todas'}</button>`;
-    lista.forEach(cat => {
-        html += `<button class="btn-filter ${categoriaAtiva === cat ? 'active' : ''}" onclick="filtrarCategoria('${cat}', this)">${cat}</button>`;
-    });
-    container.innerHTML = html;
+function gerarBotoesFiltro(listaCategorias) {
+  const container = document.getElementById('filter-bar');
+  const t = TRADUCOES[idiomaAtual];
+  
+  let html = `<button class="btn-filter ${categoriaAtiva === 'TODAS' ? 'active' : ''}" onclick="filtrarCategoria('TODAS', this)">${t.todasCategorias}</button>`;
+  
+  listaCategorias.forEach(cat => {
+    const isAct = (categoriaAtiva === cat) ? 'active' : '';
+    html += `<button class="btn-filter ${isAct}" onclick="filtrarCategoria('${cat}', this)">${cat}</button>`;
+  });
+  
+  container.innerHTML = html;
 }
 
 function filtrarCategoria(cat, btn) {
-    categoriaAtiva = cat;
-    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    plotarPinsNoMapa();
+  categoriaAtiva = cat;
+  document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'filter_category', { 'category': cat });
+  }
+
+  plotarPinsNoMapa();
 }
 
-window.onload = () => {
-    if (typeof google !== 'undefined') initMap();
-    else window.initMap = initMap;
-};
+function initApp() {
+  map = L.map('map', { zoomControl: false }).setView([-22.2819, -42.5320], 15);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(map);
+
+  iniciarRastreamentoGPS();
+  carregarDadosPlanilha();
+}
+
+function atualizarPosicaoNaTela(pos) {
+  posAtualUsuario = pos;
+  const userLatLng = [pos.lat, pos.lng];
+
+  if (!marcadorUsuario) {
+    const userIcon = L.divIcon({ className: 'user-location-marker', iconSize: [18, 18], iconAnchor: [9, 9] });
+    marcadorUsuario = L.marker(userLatLng, { icon: userIcon, zIndexOffset: 1000 }).addTo(map);
+  } else {
+    marcadorUsuario.setLatLng(userLatLng);
+  }
+
+  if (tourIniciado) {
+    verificarProximidadeEPlay(pos);
+  }
+}
+
+function centralizarNoUsuario() {
+  if (posAtualUsuario) {
+    map.setView([posAtualUsuario.lat, posAtualUsuario.lng], 17);
+  } else {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (posicao) => {
+          const pos = { lat: posicao.coords.latitude, lng: posicao.coords.longitude };
+          atualizarPosicaoNaTela(pos);
+          map.setView([pos.lat, pos.lng], 17);
+        },
+        () => { alert(TRADUCOES[idiomaAtual].semGPS); },
+        { enableHighAccuracy: true, maximumAge: 0 }
+      );
+    } else {
+      alert(TRADUCOES[idiomaAtual].semGPS);
+    }
+  }
+}
+
+function verificarProximidadeEPlay(posUsuario) {
+  if (listaMarcadoresMapa.length === 0) return;
+
+  let pontoEncontradoNoRaio = null;
+  let menorDistanciaGeral = Infinity;
+  let nomePontoMaisProximo = "";
+  const t = TRADUCOES[idiomaAtual];
+
+  listaMarcadoresMapa.forEach(item => {
+    const dist = calcularDistanciaMetros(posUsuario.lat, posUsuario.lng, item.ponto.lat, item.ponto.lng);
+
+    if (dist < menorDistanciaGeral) {
+      menorDistanciaGeral = dist;
+      nomePontoMaisProximo = item.ponto.nome;
+    }
+
+    if (dist <= item.ponto.raio) {
+      pontoEncontradoNoRaio = item;
+      const tagModo = (item.ponto.balao === 'E') ? '🚗 [Estrada]' : '🚶 [Urbano]';
+      document.getElementById("status-carregamento").innerHTML = t.noRaio.replace('{modo}', tagModo).replace('{nome}', item.ponto.nome).replace('{dist}', Math.round(dist));
+    }
+  });
+
+  if (pontoEncontradoNoRaio) {
+    if (ultimoPontoTocadoId !== pontoEncontradoNoRaio.ponto.id) {
+      ultimoPontoTocadoId = pontoEncontradoNoRaio.ponto.id;
+      pontoEncontradoNoRaio.marker.openPopup();
+
+      setTimeout(() => {
+        const idAudio = `audio-ponto-${pontoEncontradoNoRaio.ponto.id}`;
+        const elementoAudio = document.getElementById(idAudio);
+        if (elementoAudio) {
+          elementoAudio.load();
+          elementoAudio.play().catch(e => console.warn("Bloqueio de autoplay:", e));
+
+          if (typeof gtag === 'function') {
+            gtag('event', 'auto_play_geofence', {
+              'ponto_id': pontoEncontradoNoRaio.ponto.id,
+              'ponto_nome': pontoEncontradoNoRaio.ponto.nome,
+              'idioma': idiomaAtual,
+              'distancia_metros': Math.round(menorDistanciaGeral)
+            });
+          }
+        }
+      }, 400);
+    }
+  } else {
+    document.getElementById("status-carregamento").innerHTML = t.deslocamento.replace('{nome}', nomePontoMaisProximo).replace('{dist}', Math.round(menorDistanciaGeral));
+    ultimoPontoTocadoId = null;
+  }
+}
+
+function iniciarRastreamentoGPS() {
+  if ("geolocation" in navigator) {
+    const opcoesGPS = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
+    if (idMonitoramentoGPS) navigator.geolocation.clearWatch(idMonitoramentoGPS);
+
+    idMonitoramentoGPS = navigator.geolocation.watchPosition(
+      (posicao) => {
+        const pos = { lat: posicao.coords.latitude, lng: posicao.coords.longitude };
+        atualizarPosicaoNaTela(pos);
+      },
+      (erro) => { console.warn("GPS aguardando sinal...", erro); },
+      opcoesGPS
+    );
+  }
+}
+
+function iniciarTourPresencial() {
+  tourIniciado = true;
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'start_tour', { 'method': 'GPS_Tracking', 'language': idiomaAtual });
+  }
+
+  if (!("geolocation" in navigator)) {
+    alert(TRADUCOES[idiomaAtual].semGPS);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (posicao) => {
+      const posUsuario = { lat: posicao.coords.latitude, lng: posicao.coords.longitude };
+      atualizarPosicaoNaTela(posUsuario);
+      map.setView([posUsuario.lat, posUsuario.lng], 18);
+      verificarProximidadeEPlay(posUsuario);
+    },
+    () => { alert(TRADUCOES[idiomaAtual].ativeGPS); },
+    { enableHighAccuracy: true, maximumAge: 0 }
+  );
+
+  iniciarRastreamentoGPS();
+}
+
+function plotarPinsNoMapa() {
+  if (!map) return;
+
+  listaMarcadoresMapa.forEach(item => map.removeLayer(item.marker));
+  listaMarcadoresMapa = [];
+
+  if (pontosHistoricos.length === 0) return;
+
+  const grupoPontos = [];
+  const t = TRADUCOES[idiomaAtual];
+
+  pontosHistoricos.forEach(ponto => {
+    if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
+
+    const arquivoIcone = (ponto.balao === 'E') ? '../baloes/Balao_E.png' : '../baloes/Balao_U.png';
+    const iconeCustom = L.icon({
+      iconUrl: arquivoIcone,
+      iconSize: [32, 40],
+      iconAnchor: [16, 40],
+      popupAnchor: [0, -36]
+    });
+
+    const posPonto = [ponto.lat, ponto.lng];
+    grupoPontos.push(posPonto);
+
+    const pinElement = L.marker(posPonto, { icon: iconeCustom }).addTo(map);
+
+    const textoResumo = ponto.resumo[idiomaAtual] || ponto.resumo['PT'] || '';
+    const arquivoAudioNome = ponto.audioArquivo[idiomaAtual] || ponto.audioArquivo['PT'] || '';
+    const urlAudioEfetiva = resolverCaminhoAudio(arquivoAudioNome, idiomaAtual);
+
+    const idAudioTag = `audio-ponto-${ponto.id}`;
+    const tagBadge = (ponto.balao === 'E') 
+      ? '<span class="badge-tag tag-estrada">Estrada (' + ponto.raio + 'm)</span>'
+      : '<span class="badge-tag tag-urbano">Urbano (' + ponto.raio + 'm)</span>';
+
+    const tagCategoriaHtml = ponto.categoria ? `<span class="badge-tag tag-categoria">${ponto.categoria}</span>` : '';
+
+    let conteudoModal = '<div style="width:100%; font-family:sans-serif; padding:2px; box-sizing:border-box;">' +
+      tagBadge + tagCategoriaHtml +
+      '<h3 style="margin:2px 0 6px 0;font-size:14px;color:#1a365d;font-weight:bold;">' + ponto.nome + '</h3>';
+
+    if (ponto.foto && ponto.foto.trim() !== "") {
+      conteudoModal += `<img src="${ponto.foto}" class="popup-img" alt="${ponto.nome}" onError="this.style.display='none'">`;
+    }
+
+    conteudoModal += '<p style="margin:0 0 8px 0;font-size:12px;color:#2d3748;line-height:1.3;text-align:justify;">' + textoResumo + '</p>';
+
+    if (urlAudioEfetiva) {
+      conteudoModal += '<div style="margin-top:6px;">' +
+        '<label style="font-size:11px; font-weight:bold; color:#1a365d;">' + t.ouvirHistoria + '</label>' +
+        '<audio id="' + idAudioTag + '" controls preload="metadata" src="' + urlAudioEfetiva + '" style="width:100%; margin-top:4px;">' +
+        'Seu navegador não suporta o elemento de áudio.' +
+        '</audio>' +
+        '</div>';
+    }
+    conteudoModal += '</div>';
+
+    pinElement.bindPopup(conteudoModal);
+
+    pinElement.on('click', () => {
+      if (typeof gtag === 'function') {
+        gtag('event', 'select_poi', {
+          'ponto_id': ponto.id,
+          'ponto_nome': ponto.nome,
+          'idioma': idiomaAtual,
+          'categoria': ponto.categoria
+        });
+      }
+    });
+
+    listaMarcadoresMapa.push({ ponto: ponto, marker: pinElement });
+  });
+
+  if (grupoPontos.length > 0) {
+    map.fitBounds(L.latLngBounds(grupoPontos), { padding: [30, 30] });
+  }
+}
+
+window.onload = initApp;
 </script>
 </body>
 </html>
