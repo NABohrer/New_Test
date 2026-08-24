@@ -13,9 +13,9 @@ gtag('js', new Date());
 gtag('config', 'G-8YBRS5NX34');
 </script>
 <!-- 🗺️ Google Maps JavaScript API -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxjwD6OU5pNjdr-6J9xhc7Ut5E-IzSZYM&v=weekly" async defer></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxjwD6OU5pNjdr-6J9xhc7Ut5E-IzSZYM&v=weekly&callback=initMap" async defer></script>
 <style>
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 html, body {
 height: 100%;
 width: 100%;
@@ -222,7 +222,15 @@ margin-bottom: 6px;
 <div id="map"></div>
 
 <script>
-// 🔒 VALIDAÇÃO DE DOMÍNIO PERMITIDO
+// 🛡️ PROTEÇÃO 1: BLOQUEIO DE BOTÃO DIREITO E TECLAS DE INSPEÇÃO (F12/CTRL+U)
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+        e.preventDefault();
+    }
+});
+
+// 🛡️ PROTEÇÃO 2: VALIDAÇÃO DE DOMÍNIO PERMITIDO
 (function validarDominioAutorizado() {
     const dominiosPermitidos = ['nabohrer.github.io', 'dyart.github.io', 'localhost', '127.0.0.1'];
     const hostAtual = window.location.hostname.toLowerCase();
@@ -254,7 +262,7 @@ let marcadorUsuario = null;
 let watchGpsId = null;
 let tourPresencialAtivo = false;
 let pontosTocadosTour = new Set();
-let linhaConectora = null; // 📏 Linha de distância até o ponto mais próximo
+let linhaConectora = null;
 
 const TRADUCOES = {
 PT: { tour: "🚀 Iniciar Tour Presencial", tourParar: "🛑 Parar Tour Presencial", gps: "📍 Onde estou", visao3D: "🏙️ Visão 3D", visao2D: "🗺️ Mapa 2D", carregados: "✅ {qtd} pontos no RJ carregados", ouvirHistoria: "🎵 Ouvir História:" },
@@ -396,7 +404,6 @@ function verificarProximidadePontos(posicao) {
     let pontoMaisProximo = null;
     let menorDistancia = Infinity;
 
-    // Procura o ponto mais próximo de onde o usuário está agora
     pontosHistoricos.forEach(ponto => {
         const dist = calcularDistanciaMetros(userLat, userLng, ponto.lat, ponto.lng);
         if (dist < menorDistancia) {
@@ -404,7 +411,6 @@ function verificarProximidadePontos(posicao) {
             pontoMaisProximo = ponto;
         }
 
-        // Checagem de Geofencing (Abertura e áudio automático)
         if (!pontosTocadosTour.has(ponto.id) && dist <= ponto.raio) {
             pontosTocadosTour.add(ponto.id);
 
@@ -425,7 +431,6 @@ function verificarProximidadePontos(posicao) {
         }
     });
 
-    // 📏 DESENHA / ATUALIZA A LINHA TRACEJADA ATÉ O PONTO MAIS PRÓXIMO
     if (pontoMaisProximo) {
         const rotaCoords = [
             userPos,
@@ -454,13 +459,12 @@ function verificarProximidadePontos(posicao) {
             linhaConectora.setMap(map);
         }
 
-        // Atualiza a barra de status informando a distância
         const distTexto = menorDistancia > 1000 
             ? `${(menorDistancia / 1000).toFixed(1)} km` 
             : `${Math.round(menorDistancia)} meters`;
         
         document.getElementById("status-carregamento").innerHTML = 
-            `🚶 Ponto mais próximo: <b>pontoMaisProximo.nome</b>({distTexto})`;
+            `🚶 Ponto mais próximo: <b>${pontoMaisProximo.nome}</b> (${distTexto})`;
     }
 }
 
@@ -489,7 +493,7 @@ function resolverCaminhoAudio(rawInput, lang) {
     if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
     if (nomeArquivo.includes('/')) return nomeArquivo;
 
-    return `../audios_lang/{nomeArquivo}`;
+    return `../audios_${lang}/${nomeArquivo}`;
 }
 
 function formatarLinkImagemDrive(url) {
@@ -598,12 +602,12 @@ function plotarPinsNoMapa() {
         const idAudio = `audio-ponto-${ponto.id}`;
 
         let htmlModal = `<div style="max-width:260px; font-family:sans-serif;">` +
-        `<span class="badge-tag ponto.balao==='E'?'tag-estrada':'tag-urbano'">{ponto.balao === 'E' ? 'Estrada' : 'Urbano'} (${ponto.raio}m)</span>` +
+        `<span class="badge-tag ${ponto.balao === 'E' ? 'tag-estrada' : 'tag-urbano'}">${ponto.balao === 'E' ? 'Estrada' : 'Urbano'} (${ponto.raio}m)</span>` +
         (ponto.categoria ? `<span class="badge-tag tag-categoria">${ponto.categoria}</span>` : '') +
         `<h3 style="margin:4px 0; font-size:14px; color:#1a365d;">${ponto.nome}</h3>` +
-        (ponto.foto ? `<img src="ponto.foto"class="popup-img"alt="{ponto.nome}">` : '') +
+        (ponto.foto ? `<img src="${ponto.foto}" class="popup-img" alt="${ponto.nome}">` : '') +
         `<p style="margin:0 0 6px 0; font-size:12px; color:#4a5568;">${textoResumo}</p>` +
-        (urlAudio ? `<label style="font-size:11px; font-weight:bold; color:#1a365d;">t.ouvirHistoria</label><audioid="{idAudio}" controls src="${urlAudio}"></audio>` : '') +
+        (urlAudio ? `<label style="font-size:11px; font-weight:bold; color:#1a365d;">${t.ouvirHistoria}</label><audio id="${idAudio}" controls src="${urlAudio}"></audio>` : '') +
         `</div>`;
 
         const infoWindow = new google.maps.InfoWindow({ content: htmlModal });
@@ -623,9 +627,9 @@ function plotarPinsNoMapa() {
 
 function gerarBotoesFiltro(lista) {
     const container = document.getElementById('filter-bar');
-    let html = `<button class="btn-filter categoriaAtiva==='TODAS'?'active':''"onclick="filtrarCategoria('TODAS',this)">{TRADUCOES[idiomaAtual].todasCategorias || '🌐 Todas'}</button>`;
+    let html = `<button class="btn-filter ${categoriaAtiva === 'TODAS' ? 'active' : ''}" onclick="filtrarCategoria('TODAS', this)">${TRADUCOES[idiomaAtual].todasCategorias || '🌐 Todas'}</button>`;
     lista.forEach(cat => {
-        html += `<button class="btn-filter categoriaAtiva===cat?'active':''"onclick="filtrarCategoria('{cat}', this)">${cat}</button>`;
+        html += `<button class="btn-filter ${categoriaAtiva === cat ? 'active' : ''}" onclick="filtrarCategoria('${cat}', this)">${cat}</button>`;
     });
     container.innerHTML = html;
 }
