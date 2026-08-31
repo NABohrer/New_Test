@@ -306,7 +306,6 @@ const TRADUCOES = {
     ES: { tour: "🚀 Iniciar Recorrido", tourParar: "🛑 Detener Recorrido", gps: "📍 Mi Ubicación", carregados: "✅ {qtd} puntos cargados", ouvirHistoria: "🎵 Escuchar Historia:", todasCategorias: "🌐 Todas" }
 };
 
-/* Função para remover acentos e caracteres especiais das chaves da planilha */
 function normalizarTexto(txt) {
     return String(txt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
@@ -326,134 +325,163 @@ function initMapOSM() {
 }
 
 /* ==========================================================================
-   4. CONEXÃO E LEITURA DA PLANILHA GOOGLE (2 ABAS VIA GVIZ)
+   4. CONEXÃO E LEITURA DA PLANILHA GOOGLE (BUSCA POR GID OU NOME DA ABA)
    ========================================================================== */
-async function buscarDadosGviz(spreadsheetId, gidOuNomeAba) {
-    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${gidOuNomeAba}`;
+async function buscarDadosGviz(spreadsheetId, paramAba) {
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${paramAba}`;
     const resposta = await fetch(url);
+    if (!resposta.ok) {
+        throw new Error(`HTTP Error status: ${resposta.status}`);
+    }
     const texto = await resposta.text();
-    const jsonPuro = JSON.parse(texto.substring(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
+    const jsonInicio = texto.indexOf('{');
+    const jsonFim = texto.lastIndexOf('}') + 1;
+    if (jsonInicio === -1 || jsonFim === -1) {
+        throw new Error("Resposta em formato inválido ou aba não pública");
+    }
+    const jsonPuro = JSON.parse(texto.substring(jsonInicio, jsonFim));
+    if (!jsonPuro.table || !jsonPuro.table.rows) {
+        return [];
+    }
     return jsonPuro.table.rows;
 }
 
 async function carregarParametrosEAtivarDados() {
+    let linhasParam = [];
+    
+    // Tenta ler a Aba 1 por gid=0 ou por nome comum
     try {
-        const linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
-        
-        if (linhasParam && linhasParam.length > 0) {
-            linhasParam.forEach(linha => {
-                if (!linha || !linha.c) return;
-                const chave = normalizarTexto(linha.c[0] ? linha.c[0].v : "");
-                const valor = linha.c[1] ? String(linha.c[1].v || linha.c[1].f || "").trim() : "";
-
-                if (chave.includes("tipo_mapa") || chave.includes("tipo de mapa")) configCliente.tipoMapa = valor.toUpperCase();
-                if (chave.includes("titulo")) configCliente.titulo = valor;
-                if (chave.includes("subtitulo")) configCliente.subtitulo = valor;
-                if (chave.includes("logo")) configCliente.logoUrl = valor;
-                if (chave.includes("balao_e")) configCliente.balaoE = valor;
-                if (chave.includes("balao_u")) configCliente.balaoU = valor;
-                if (chave.includes("idiomas")) {
-                    idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
-                }
-            });
-
-            if (configCliente.titulo) {
-                document.getElementById("header-titulo").innerText = configCliente.titulo;
-                document.title = configCliente.titulo;
-            }
-            if (configCliente.subtitulo) {
-                document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
-            }
-            if (configCliente.logoUrl) {
-                document.getElementById("header-logo").src = configCliente.logoUrl;
-            }
-
-            atualizarBotoesIdiomaVisiveis();
+        linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
+    } catch (e1) {
+        try {
+            linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, "sheet=PARAMETROS");
+        } catch (e2) {
+            console.error("Erro ao carregar parâmetros da Aba 1:", e2);
         }
-    } catch (e) {
-        console.log("Erro ao carregar parâmetros da Aba 1:", e);
+    }
+
+    if (linhasParam && linhasParam.length > 0) {
+        linhasParam.forEach(linha => {
+            if (!linha || !linha.c) return;
+            const chave = normalizarTexto(linha.c[0] ? linha.c[0].v : "");
+            const valor = linha.c[1] ? String(linha.c[1].v || linha.c[1].f || "").trim() : "";
+
+            if (chave.includes("tipo_mapa") || chave.includes("tipo de mapa")) configCliente.tipoMapa = valor.toUpperCase();
+            if (chave.includes("titulo")) configCliente.titulo = valor;
+            if (chave.includes("subtitulo")) configCliente.subtitulo = valor;
+            if (chave.includes("logo")) configCliente.logoUrl = valor;
+            if (chave.includes("balao_e")) configCliente.balaoE = valor;
+            if (chave.includes("balao_u")) configCliente.balaoU = valor;
+            if (chave.includes("idiomas")) {
+                idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
+            }
+        });
+
+        if (configCliente.titulo) {
+            document.getElementById("header-titulo").innerText = configCliente.titulo;
+            document.title = configCliente.titulo;
+        }
+        if (configCliente.subtitulo) {
+            document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
+        }
+        if (configCliente.logoUrl) {
+            document.getElementById("header-logo").src = configCliente.logoUrl;
+        }
+
+        atualizarBotoesIdiomaVisiveis();
     }
 
     carregarDadosPontos();
 }
 
 async function carregarDadosPontos() {
-    try {
-        let linhasDados;
+    let linhasDados = [];
+    let erroDetalhado = "";
+
+    // Tentativas em cascata: gid=1, sheet=DADOS, sheet=Sheet2 e por fim gid=0 (se for aba única)
+    const opcoesTentativa = ["gid=1", "sheet=DADOS", "sheet=Dados", "sheet=Sheet2", "gid=0"];
+
+    for (let opt of opcoesTentativa) {
         try {
-            linhasDados = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=1");
+            linhasDados = await buscarDadosGviz(ID_PLANILHA_ATIVA, opt);
+            if (linhasDados && linhasDados.length > 1) {
+                console.log(`Dados encontrados com sucesso usando: ${opt}`);
+                break;
+            }
         } catch (err) {
-            linhasDados = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
+            erroDetalhado = err.message;
         }
-
-        pontosHistoricos = [];
-        let contadorId = 1;
-        let categoriasSet = new Set();
-
-        const ordemLangs = (idiomasHabilitados && idiomasHabilitados.length > 0) 
-            ? idiomasHabilitados 
-            : ['PT', 'EN', 'ES'];
-
-        const langPrimario = ordemLangs[0];
-
-        linhasDados.forEach((linha) => {
-            try {
-                if (!linha || !linha.c) return;
-                const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
-
-                let nomePatrimonio = val(0);
-                if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
-
-                let latNum = parseFloat(val(1).replace(',', '.'));
-                let lngNum = parseFloat(val(2).replace(',', '.'));
-                let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
-
-                if (!isNaN(latNum) && !isNaN(lngNum)) {
-                    let cat = val(7) || "Geral";
-                    if (cat !== "Geral") categoriasSet.add(cat);
-
-                    let mapaResumos = {};
-                    let mapaAudios = {};
-
-                    mapaResumos[ordemLangs[0]] = val(4);
-                    mapaAudios[ordemLangs[0]] = resolverCaminhoAudio(val(5));
-
-                    if (ordemLangs[1]) {
-                        mapaResumos[ordemLangs[1]] = val(9);
-                        mapaAudios[ordemLangs[1]] = resolverCaminhoAudio(val(10));
-                    }
-
-                    if (ordemLangs[2]) {
-                        mapaResumos[ordemLangs[2]] = val(11);
-                        mapaAudios[ordemLangs[2]] = resolverCaminhoAudio(val(12));
-                    }
-
-                    pontosHistoricos.push({
-                        id: contadorId++,
-                        nome: nomePatrimonio,
-                        lat: latNum,
-                        lng: lngNum,
-                        balao: tipoBalao,
-                        raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
-                        categoria: cat,
-                        foto: formatarLinkImagemDrive(val(8)),
-                        resumo: mapaResumos,
-                        audioArquivo: mapaAudios,
-                        langBase: langPrimario
-                    });
-                }
-            } catch (e) {}
-        });
-
-        atualizarBotoesIdiomaVisiveis();
-        document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
-        listaCategoriasEncontradas = Array.from(categoriasSet);
-        gerarBotoesFiltro(listaCategoriasEncontradas);
-        plotarPinsNoMapa();
-
-    } catch (erro) {
-        document.getElementById("status-carregamento").innerHTML = "❌ Erro ao sincronizar dados com a planilha.";
     }
+
+    if (!linhasDados || linhasDados.length === 0) {
+        document.getElementById("status-carregamento").innerHTML = `❌ Não foi possível ler os dados da planilha. Verifique a publicação na web. (${erroDetalhado})`;
+        return;
+    }
+
+    pontosHistoricos = [];
+    let contadorId = 1;
+    let categoriasSet = new Set();
+
+    const ordemLangs = (idiomasHabilitados && idiomasHabilitados.length > 0) 
+        ? idiomasHabilitados 
+        : ['PT', 'EN', 'ES'];
+
+    const langPrimario = ordemLangs[0];
+
+    linhasDados.forEach((linha) => {
+        try {
+            if (!linha || !linha.c) return;
+            const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
+
+            let nomePatrimonio = val(0);
+            if (!nomePatrimonio || normalizarTexto(nomePatrimonio).includes("patrimonio") || normalizarTexto(nomePatrimonio).includes("nome")) return;
+
+            let latNum = parseFloat(val(1).replace(',', '.'));
+            let lngNum = parseFloat(val(2).replace(',', '.'));
+            let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
+
+            if (!isNaN(latNum) && !isNaN(lngNum)) {
+                let cat = val(7) || "Geral";
+                if (cat !== "Geral") categoriasSet.add(cat);
+
+                let mapaResumos = {};
+                let mapaAudios = {};
+
+                mapaResumos[ordemLangs[0]] = val(4);
+                mapaAudios[ordemLangs[0]] = resolverCaminhoAudio(val(5));
+
+                if (ordemLangs[1]) {
+                    mapaResumos[ordemLangs[1]] = val(9);
+                    mapaAudios[ordemLangs[1]] = resolverCaminhoAudio(val(10));
+                }
+
+                if (ordemLangs[2]) {
+                    mapaResumos[ordemLangs[2]] = val(11);
+                    mapaAudios[ordemLangs[2]] = resolverCaminhoAudio(val(12));
+                }
+
+                pontosHistoricos.push({
+                    id: contadorId++,
+                    nome: nomePatrimonio,
+                    lat: latNum,
+                    lng: lngNum,
+                    balao: tipoBalao,
+                    raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
+                    categoria: cat,
+                    foto: formatarLinkImagemDrive(val(8)),
+                    resumo: mapaResumos,
+                    audioArquivo: mapaAudios,
+                    langBase: langPrimario
+                });
+            }
+        } catch (e) {}
+    });
+
+    atualizarBotoesIdiomaVisiveis();
+    document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
+    listaCategoriasEncontradas = Array.from(categoriasSet);
+    gerarBotoesFiltro(listaCategoriasEncontradas);
+    plotarPinsNoMapa();
 }
 
 /* ==========================================================================
