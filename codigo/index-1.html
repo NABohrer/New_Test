@@ -217,7 +217,7 @@ width: 270px !important;
 <div class="header-left">
 <img id="header-logo" src="" alt="Logo" class="header-logo" style="display:none;">
 <div class="header-text">
-<h2 id="header-titulo">Carregando...</h2>
+<h2 id="header-titulo">Sincronizando...</h2>
 <p id="header-subtitulo"></p>
 </div>
 </div>
@@ -240,34 +240,10 @@ width: 270px !important;
 
 <script>
 /* ==========================================================================
-   1. SEGURANÇA E PROTEÇÃO DO CÓDIGO
-   ========================================================================== */
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-    if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
-        e.preventDefault();
-    }
-});
-
-(function validarDominioAutorizado() {
-    const dominiosPermitidos = ['nabohrer.github.io', 'dyart.github.io', 'localhost', '127.0.0.1'];
-    const hostAtual = window.location.hostname.toLowerCase();
-    const autorizado = dominiosPermitidos.some(d => hostAtual === d || hostAtual.endsWith('.' + d));
-    
-    if (!autorizado) {
-        document.body.innerHTML = `
-            <div style="padding: 40px; text-align: center; font-family: sans-serif; background: #fff; height: 100vh;">
-                <h2 style="color: #c0392b;">⚠️ Acesso Não Autorizado</h2>
-                <p>Ambiente de validação restrito DYART.</p>
-            </div>`;
-        throw new Error("Execução interrompida: Domínio não autorizado.");
-    }
-})();
-
-/* ==========================================================================
-   2. CONFIGURAÇÕES GLOBAIS E LEITURA DE PARÂMETROS VIA URL
+   1. CONFIGURAÇÕES GLOBAIS E CONSTANTES DE FALLBACK
    ========================================================================== */
 const ID_PLANILHA_PADRAO = '1oxeXlXTxybVMNYWzauCfp_GATkFzVoXqpTtvKKmmkHg';
+const BASE_GITHUB_RAW = 'https://raw.githubusercontent.com/NABohrer/New_Test/main/baloes/';
 
 function obterIdPlanilhaURL() {
     const params = new URLSearchParams(window.location.search);
@@ -286,11 +262,11 @@ let listaCategoriasEncontradas = [];
 
 let configCliente = {
     tipoMapa: "OSM",
-    titulo: "",
-    subtitulo: "",
-    logoUrl: "",
-    balaoE: "../baloes/Balao_E.png",
-    balaoU: "../baloes/Balao_U.png"
+    titulo: "Plataforma hip.hop Versão Multilingue 2.2",
+    subtitulo: "Mapa do Município do Rio de Janeiro",
+    logoUrl: BASE_GITHUB_RAW + "Logo_hiphop.png",
+    balaoE: BASE_GITHUB_RAW + "Balao_E.png",
+    balaoU: BASE_GITHUB_RAW + "Balao_U.png"
 };
 
 let marcadorUsuario = null;
@@ -309,8 +285,21 @@ function normalizarTexto(txt) {
     return String(txt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 }
 
+function formatarUrlGitHub(urlOriginal, arquivoPadrao) {
+    if (!urlOriginal) return BASE_GITHUB_RAW + arquivoPadrao;
+    let url = urlOriginal.trim();
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+        return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+    }
+    if (url.startsWith("../") || url.startsWith("./")) {
+        const nome = url.split('/').pop();
+        return BASE_GITHUB_RAW + nome;
+    }
+    return BASE_GITHUB_RAW + url;
+}
+
 /* ==========================================================================
-   3. INICIALIZAÇÃO DO MAPA (OPENSTREETMAP / LEAFLET)
+   2. INICIALIZAÇÃO DO MAPA (OPENSTREETMAP / LEAFLET)
    ========================================================================== */
 function initMapOSM() {
     map = L.map('map').setView([-22.9068, -43.1729], 16);
@@ -324,19 +313,19 @@ function initMapOSM() {
 }
 
 /* ==========================================================================
-   4. CONEXÃO E LEITURA DA PLANILHA GOOGLE
+   3. CONEXÃO E LEITURA DA PLANILHA GOOGLE
    ========================================================================== */
 async function buscarDadosGviz(spreadsheetId, paramAba) {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${paramAba}`;
     const resposta = await fetch(url);
     if (!resposta.ok) {
-        throw new Error(`HTTP Error status: ${resposta.status}`);
+        throw new Error(`HTTP ${resposta.status}`);
     }
     const texto = await resposta.text();
     const jsonInicio = texto.indexOf('{');
     const jsonFim = texto.lastIndexOf('}') + 1;
     if (jsonInicio === -1 || jsonFim === -1) {
-        throw new Error("Formato de resposta inválido");
+        throw new Error("Formato inválido");
     }
     const jsonPuro = JSON.parse(texto.substring(jsonInicio, jsonFim));
     return jsonPuro.table.rows || [];
@@ -347,41 +336,50 @@ async function carregarParametrosEAtivarDados() {
         const linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
 
         if (linhasParam && linhasParam.length > 0) {
-            linhasParam.forEach(linha => {
+            // Varredura flexível em toda a estrutura
+            linhasParam.forEach((linha, idxLinha) => {
                 if (!linha || !linha.c) return;
-                const chave = normalizarTexto(linha.c[0] ? linha.c[0].v : "");
-                const valor = linha.c[1] ? String(linha.c[1].v || linha.c[1].f || "").trim() : "";
+                linha.c.forEach((celula, idxCol) => {
+                    if (!celula || !celula.v) return;
+                    const textoCel = normalizarTexto(celula.v);
+                    
+                    // Busca valor na célula seguinte (mesma linha) ou na linha abaixo (mesma coluna)
+                    const obterValorProximo = () => {
+                        if (linha.c[idxCol + 1] && linha.c[idxCol + 1].v) return String(linha.c[idxCol + 1].v).trim();
+                        if (linhasParam[idxLinha + 1] && linhasParam[idxLinha + 1].c && linhasParam[idxLinha + 1].c[idxCol]) {
+                            return String(linhasParam[idxLinha + 1].c[idxCol].v || "").trim();
+                        }
+                        return "";
+                    };
 
-                if (chave.includes("tipo_mapa")) configCliente.tipoMapa = valor.toUpperCase();
-                if (chave.includes("titulo")) configCliente.titulo = valor;
-                if (chave.includes("subtitulo")) configCliente.subtitulo = valor;
-                if (chave.includes("logo")) configCliente.logoUrl = valor;
-                if (chave.includes("balao_e")) configCliente.balaoE = valor;
-                if (chave.includes("balao_u")) configCliente.balaoU = valor;
-                if (chave.includes("idiomas")) {
-                    idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
-                }
+                    const valFound = obterValorProximo();
+
+                    if (textoCel.includes("tipo_mapa") && valFound) configCliente.tipoMapa = valFound.toUpperCase();
+                    if (textoCel.includes("titulo") && valFound && !textoCel.includes("subtitulo")) configCliente.titulo = valFound;
+                    if (textoCel.includes("subtitulo") && valFound) configCliente.subtitulo = valFound;
+                    if (textoCel.includes("logo") && valFound) configCliente.logoUrl = formatarUrlGitHub(valFound, "Logo_hiphop.png");
+                    if (textoCel.includes("balao_e") && valFound) configCliente.balaoE = formatarUrlGitHub(valFound, "Balao_E.png");
+                    if (textoCel.includes("balao_u") && valFound) configCliente.balaoU = formatarUrlGitHub(valFound, "Balao_U.png");
+                    if (textoCel.includes("idiomas") && valFound) {
+                        idiomasHabilitados = valFound.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
+                    }
+                });
             });
-
-            if (configCliente.titulo) {
-                document.getElementById("header-titulo").innerText = configCliente.titulo;
-                document.title = configCliente.titulo;
-            }
-            if (configCliente.subtitulo) {
-                document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
-            }
-            if (configCliente.logoUrl) {
-                const imgLogo = document.getElementById("header-logo");
-                imgLogo.src = configCliente.logoUrl;
-                imgLogo.style.display = "block";
-            }
-
-            atualizarBotoesIdiomaVisiveis();
         }
     } catch (e) {
-        console.log("Erro na leitura dos parâmetros:", e);
+        console.log("Usando parâmetros de fallback.", e);
     }
 
+    // Aplica no cabeçalho
+    document.getElementById("header-titulo").innerText = configCliente.titulo;
+    document.title = configCliente.titulo;
+    document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
+    
+    const imgLogo = document.getElementById("header-logo");
+    imgLogo.src = configCliente.logoUrl;
+    imgLogo.style.display = "block";
+
+    atualizarBotoesIdiomaVisiveis();
     carregarDadosPontos();
 }
 
@@ -401,7 +399,7 @@ async function carregarDadosPontos() {
     }
 
     if (!linhasDados || linhasDados.length === 0) {
-        document.getElementById("status-carregamento").innerHTML = `❌ Erro ao acessar os dados da planilha (${erroMensagem}).`;
+        document.getElementById("status-carregamento").innerHTML = `❌ Erro ao acessar a planilha (${erroMensagem}). Verifique a publicação na web.`;
         return;
     }
 
@@ -474,7 +472,7 @@ async function carregarDadosPontos() {
 }
 
 /* ==========================================================================
-   5. RENDERIZAÇÃO DOS ELEMENTOS DO MAPA E POPUPS
+   4. RENDERIZAÇÃO DOS ELEMENTOS DO MAPA E POPUPS
    ========================================================================== */
 function plotarPinsNoMapa() {
     if (!map) return;
@@ -489,8 +487,8 @@ function plotarPinsNoMapa() {
         if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
 
         const iconeUrl = (ponto.balao === 'E') 
-            ? (configCliente.balaoE || '../baloes/Balao_E.png') 
-            : (configCliente.balaoU || '../baloes/Balao_U.png');
+            ? (configCliente.balaoE || (BASE_GITHUB_RAW + 'Balao_E.png')) 
+            : (configCliente.balaoU || (BASE_GITHUB_RAW + 'Balao_U.png'));
 
         const customIcon = L.icon({
             iconUrl: iconeUrl,
@@ -529,7 +527,7 @@ function plotarPinsNoMapa() {
 }
 
 /* ==========================================================================
-   6. CONTROLE DINÂMICO DE IDIOMAS E FILTROS
+   5. CONTROLE DINÂMICO DE IDIOMAS E FILTROS
    ========================================================================== */
 function atualizarBotoesIdiomaVisiveis() {
     ['PT', 'EN', 'ES'].forEach(lang => {
@@ -580,7 +578,7 @@ function filtrarCategoria(cat, btn) {
 }
 
 /* ==========================================================================
-   7. GEOLOCALIZAÇÃO E TOUR PRESENCIAL EM TEMPO REAL
+   6. GEOLOCALIZAÇÃO E TOUR PRESENCIAL EM TEMPO REAL
    ========================================================================== */
 function centralizarNoUsuario() {
     if (!navigator.geolocation) {
@@ -720,7 +718,7 @@ function verificarProximidadePontos(posicao) {
 }
 
 /* ==========================================================================
-   8. TRATAMENTO DE LINKS E ARQUIVOS DE MÍDIA
+   7. TRATAMENTO DE LINKS E ARQUIVOS DE MÍDIA
    ========================================================================== */
 function resolverCaminhoAudio(rawInput) {
     if (!rawInput) return "";
@@ -745,7 +743,7 @@ function formatarLinkImagemDrive(url) {
 }
 
 /* ==========================================================================
-   9. INICIALIZAÇÃO DA APLICAÇÃO
+   8. INICIALIZAÇÃO DA APLICAÇÃO
    ========================================================================== */
 window.onload = () => {
     initMapOSM();
