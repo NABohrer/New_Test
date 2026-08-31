@@ -1,1 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title id="page-title">Plataforma hip.hop 2D - OpenStreetMap</title>
+
+<!-- 📊 Google Analytics 4 (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8YBRS5NX34"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-8YBRS5NX34');
+</script>
+
+<!-- 🗺️ Leaflet CSS e JS (OpenStreetMap Engine) -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<style>
+* { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
+html, body {
+height: 100%;
+width: 100%;
+margin: 0;
+padding: 0;
+font-family: 'Segoe UI', Arial, sans-serif;
+background: #f7fafc;
+color: #2d3748;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+}
+/* Cabeçalho */
+#header {
+background: #1a365d;
+color: white;
+padding: 8px 12px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: space-between;
+}
+.header-left {
+display: flex;
+align-items: center;
+gap: 10px;
+}
+.header-logo {
+height: 36px;
+width: auto;
+object-fit: contain;
+}
+.header-text h2 { margin: 0; font-size: 14px; letter-spacing: 0.5px; }
+.header-text p { margin: 1px 0 0 0; font-size: 10px; color: #bee3f8; }
+
+/* Seletor de Idiomas Dinâmico */
+.lang-selector {
+display: flex;
+gap: 4px;
+}
+.btn-lang {
+background: rgba(255,255,255,0.15);
+color: white;
+border: 1px solid rgba(255,255,255,0.3);
+padding: 4px 8px;
+font-size: 11px;
+font-weight: bold;
+border-radius: 4px;
+cursor: pointer;
+transition: all 0.2s;
+display: none; /* Escondidos por padrão; exibidos dinamicamente */
+}
+.btn-lang.active {
+background: #e67e22;
+border-color: #e67e22;
+display: inline-block;
+}
+
+/* Barra de Controle de Tour e Localização */
+#tour-control {
+background: #ffffff;
+padding: 8px 12px;
+box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+text-align: center;
+flex-shrink: 0;
+border-bottom: 1px solid #e2e8f0;
+z-index: 1000;
+display: flex;
+gap: 8px;
+}
+.btn-tour {
+background: #e67e22;
+color: white;
+border: none;
+padding: 10px 8px;
+font-size: 12px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+flex: 2;
+transition: background 0.2s;
+}
+.btn-tour.ativo {
+background: #c0392b !important;
+animation: pulse 1.5s infinite;
+}
+.btn-localizacao {
+background: #2b6cb0;
+color: white;
+border: none;
+padding: 10px 8px;
+font-size: 12px;
+font-weight: bold;
+border-radius: 6px;
+cursor: pointer;
+flex: 1;
+transition: background 0.2s;
+}
+
+@keyframes pulse {
+0% { opacity: 1; }
+50% { opacity: 0.6; }
+100% { opacity: 1; }
+}
+
+/* Filtros de Categoria */
+#filter-bar {
+background: #edf2f7;
+padding: 6px 12px;
+display: flex;
+gap: 6px;
+overflow-x: auto;
+white-space: nowrap;
+border-bottom: 1px solid #cbd5e0;
+flex-shrink: 0;
+-webkit-overflow-scrolling: touch;
+}
+#filter-bar::-webkit-scrollbar { display: none; }
+.btn-filter {
+background: #ffffff;
+color: #4a5568;
+border: 1px solid #cbd5e0;
+padding: 4px 10px;
+font-size: 11px;
+font-weight: 600;
+border-radius: 12px;
+cursor: pointer;
+}
+.btn-filter.active {
+background: #1a365d;
+color: white;
+border-color: #1a365d;
+}
+
+#status-carregamento {
+font-size: 11px;
+font-weight: 600;
+color: #4a5568;
+padding: 6px;
+text-align: center;
+background: #edf2f7;
+flex-shrink: 0;
+}
+
+/* Contêiner do Mapa */
+#map {
+width: 100%;
+height: calc(100vh - 140px);
+min-height: 350px;
+flex-grow: 1;
+background: #e2e8f0;
+z-index: 1;
+}
+
+/* Badges e Mídia */
+audio { width: 100%; height: 36px; margin-top: 6px; display: block; }
+.badge-tag {
+display: inline-block;
+padding: 2px 6px;
+font-size: 10px;
+font-weight: bold;
+border-radius: 4px;
+color: white;
+margin-bottom: 4px;
+}
+.tag-estrada { background-color: #27ae60; }
+.tag-urbano { background-color: #2b6cb0; }
+.tag-categoria { background-color: #8e44ad; margin-left: 4px; }
+.popup-img {
+width: 100%;
+max-height: 140px;
+object-fit: cover;
+border-radius: 6px;
+margin-bottom: 6px;
+display: block;
+}
+
+/* Ajustes visuais do Popup Leaflet */
+.leaflet-popup-content-wrapper {
+padding: 4px;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.leaflet-popup-content {
+margin: 8px 12px !important;
+line-height: 1.4;
+max-width: 270px !important;
+width: 270px !important;
+}
+</style>
+</head>
+<body>
+
+<div id="header">
+<div class="header-left">
+<img id="header-logo" src="../baloes/Logo_hiphop.png" alt="Logo hip.hop" class="header-logo">
+<div class="header-text">
+<h2 id="header-titulo">Plataforma hip.hop 2D</h2>
+<p id="header-subtitulo">DYART - Business Intelligence</p>
+</div>
+</div>
+<!-- Seletor dinamico de idiomas -->
+<div class="lang-selector" id="lang-container">
+<button class="btn-lang" id="btn-pt" onclick="trocarIdioma('PT')">PT</button>
+<button class="btn-lang" id="btn-en" onclick="trocarIdioma('EN')">EN</button>
+<button class="btn-lang" id="btn-es" onclick="trocarIdioma('ES')">ES</button>
+</div>
+</div>
+
+<div id="tour-control">
+<button id="btn-tour-txt" class="btn-tour" onclick="iniciarTourPresencial()">🚀 Iniciar Tour Presencial</button>
+<button id="btn-gps-txt" class="btn-localizacao" onclick="centralizarNoUsuario()">📍 Onde estou</button>
+</div>
+
+<div id="filter-bar"></div>
+<div id="status-carregamento">🔄 Sincronizando dados com a plataforma...</div>
+
+<div id="map"></div>
+
+<script>
+/* ==========================================================================
+   1. SEGURANÇA E PROTEÇÃO DO CÓDIGO
+   ========================================================================== */
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.keyCode === 123 || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74)) || (e.ctrlKey && e.keyCode === 85)) {
+        e.preventDefault();
+    }
+});
+
+(function validarDominioAutorizado() {
+    const dominiosPermitidos = ['nabohrer.github.io', 'dyart.github.io', 'localhost', '127.0.0.1'];
+    const hostAtual = window.location.hostname.toLowerCase();
+    const autorizado = dominiosPermitidos.some(d => hostAtual === d || hostAtual.endsWith('.' + d));
+    
+    if (!autorizado) {
+        document.body.innerHTML = `
+            <div style="padding: 40px; text-align: center; font-family: sans-serif; background: #fff; height: 100vh;">
+                <h2 style="color: #c0392b;">⚠️ Acesso Não Autorizado</h2>
+                <p>Ambiente de validação restrito DYART.</p>
+            </div>`;
+        throw new Error("Execução interrompida: Domínio não autorizado.");
+    }
+})();
+
+/* ==========================================================================
+   2. CONFIGURAÇÕES GLOBAIS E LEITURA DE PARÂMETROS VIA URL
+   ========================================================================== */
+// ID Padrão do Rio de Janeiro caso nenhum parâmetro ?id= seja passado na URL
+const ID_PLANILHA_PADRAO = '1cHfaZWEXlhhzFKGpR3KqvkIqcLAitNOdYuhUNXysESg';
+
+// Captura dinamicamente o parâmetro ?id= da barra de endereço
+function obterIdPlanilhaURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id') || ID_PLANILHA_PADRAO;
+}
+
+const ID_PLANILHA_ATIVA = obterIdPlanilhaURL();
+
+// Variáveis de Estado da Aplicação
+let map;
+let pontosHistoricos = [];
+let listaMarcadoresMapa = [];
+let categoriaAtiva = "TODAS";
+let idiomaAtual = "PT";
+let idiomasHabilitados = ["PT"]; // Será atualizado dinamicamente pela Aba 1
+let listaCategoriasEncontradas = [];
+
+// Estado dos Parâmetros Globais do Cliente (Aba 1)
+let configCliente = {
+    titulo: "Plataforma hip.hop 2D",
+    subtitulo: "DYART - Business Intelligence",
+    logoUrl: "../baloes/Logo_hiphop.png"
+};
+
+// Controle de GPS, Tour Presencial e Linha Guia
+let marcadorUsuario = null;
+let watchGpsId = null;
+let tourPresencialAtivo = false;
+let pontosTocadosTour = new Set();
+let linhaConectora = null;
+
+// Dicionário de Tradução dos Botões e Mensagens da Interface
+const TRADUCOES = {
+    PT: { tour: "🚀 Iniciar Tour Presencial", tourParar: "🛑 Parar Tour Presencial", gps: "📍 Onde estou", carregados: "✅ {qtd} pontos carregados", ouvirHistoria: "🎵 Ouvir História:", todasCategorias: "🌐 Todas" },
+    EN: { tour: "🚀 Start Live Tour", tourParar: "🛑 Stop Live Tour", gps: "📍 My Location", carregados: "✅ {qtd} spots loaded", ouvirHistoria: "🎵 Listen to Story:", todasCategorias: "🌐 All" },
+    ES: { tour: "🚀 Iniciar Recorrido", tourParar: "🛑 Detener Recorrido", gps: "📍 Mi Ubicación", carregados: "✅ {qtd} puntos cargados", ouvirHistoria: "🎵 Escuchar Historia:", todasCategorias: "🌐 Todas" }
+};
+
+/* ==========================================================================
+   3. INICIALIZAÇÃO DO MAPA (OPENSTREETMAP / LEAFLET)
+   ========================================================================== */
+function initMapOSM() {
+    map = L.map('map').setView([-22.9068, -43.1729], 16);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Inicia a carga em cascata: Primeiro Parâmetros (Aba 1), depois Dados (Aba 2)
+    carregarParametrosEAtivarDados();
+}
+
+/* ==========================================================================
+   4. CONEXÃO E LEITURA DA PLANILHA GOOGLE (2 ABAS VIA GVIZ)
+   ========================================================================== */
+// Função auxiliar para converter resposta GViz em JSON estruturado
+async function buscarDadosGviz(spreadsheetId, gidOuNomeAba) {
+    const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${gidOuNomeAba}`;
+    const resposta = await fetch(url);
+    const texto = await resposta.text();
+    const jsonPuro = JSON.parse(texto.substring(texto.indexOf('{'), texto.lastIndexOf('}') + 1));
+    return jsonPuro.table.rows;
+}
+
+// ETAPA A: Lê a Aba 1 (Parâmetros do Cliente)
+async function carregarParametrosEAtivarDados() {
+    try {
+        // Tenta buscar pela primeira aba (gid=0)
+        const linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
+        
+        if (linhasParam && linhasParam.length > 0) {
+            // Varre as linhas da Aba 1 buscando os parâmetros definidos
+            linhasParam.forEach(linha => {
+                if (!linha || !linha.c) return;
+                const chave = linha.c[0] ? String(linha.c[0].v || "").trim().toLowerCase() : "";
+                const valor = linha.c[1] ? String(linha.c[1].v || linha.c[1].f || "").trim() : "";
+
+                if (chave.includes("titulo") || chave.includes("título")) configCliente.titulo = valor;
+                if (chave.includes("subtitulo") || chave.includes("subtítulo")) configCliente.subtitulo = valor;
+                if (chave.includes("logo")) configCliente.logoUrl = valor;
+                if (chave.includes("idiomas")) {
+                    idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim());
+                }
+            });
+
+            // Aplica os cabeçalhos dinâmicos na interface
+            document.getElementById("header-titulo").innerText = configCliente.titulo;
+            document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
+            document.title = configCliente.titulo;
+            if (configCliente.logoUrl) {
+                document.getElementById("header-logo").src = configCliente.logoUrl;
+            }
+        }
+    } catch (e) {
+        console.log("Aba de parâmetros não encontrada ou no formato antigo. Mantendo padrões.", e);
+    }
+
+    // Após carregar os parâmetros, carrega os dados dos pontos (Aba 2)
+    carregarDadosPontos();
+}
+
+// ETAPA B: Lê a Aba 2 (Dados dos Pontos Históricos - gid=1 ou gid=0 de fallback)
+async function carregarDadosPontos() {
+    try {
+        let linhasDados;
+        try {
+            // Tenta carregar a segunda aba (gid=1)
+            linhasDados = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=1");
+        } catch (err) {
+            // Fallback caso a planilha seja da versão legada de aba única
+            linhasDados = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
+        }
+
+        pontosHistoricos = [];
+        let contadorId = 1;
+        let categoriasSet = new Set();
+
+        // Processa as linhas pulando o cabeçalho (dados começam na linha 3 / índice de array >= 2)
+        linhasDados.forEach((linha, index) => {
+            try {
+                if (!linha || !linha.c) return;
+                const val = (idx) => linha.c[idx] ? String(linha.c[idx].v || linha.c[idx].f || "").trim() : "";
+
+                let nomePatrimonio = val(0);
+                // Ignora linhas de cabeçalho ou vazias
+                if (!nomePatrimonio || nomePatrimonio.toLowerCase().includes("patrimônio") || nomePatrimonio.toLowerCase().includes("nome")) return;
+
+                let latNum = parseFloat(val(1).replace(',', '.'));
+                let lngNum = parseFloat(val(2).replace(',', '.'));
+                let tipoBalao = (val(3).toUpperCase() === "E") ? "E" : "U";
+
+                if (!isNaN(latNum) && !isNaN(lngNum)) {
+                    let cat = val(7) || "Geral";
+                    if (cat !== "Geral") categoriasSet.add(cat);
+
+                    pontosHistoricos.push({
+                        id: contadorId++,
+                        nome: nomePatrimonio,
+                        lat: latNum,
+                        lng: lngNum,
+                        balao: tipoBalao,
+                        raio: parseInt(val(6)) || (tipoBalao === "E" ? 150 : 25),
+                        categoria: cat,
+                        foto: formatarLinkImagemDrive(val(8)),
+                        resumo: { 
+                            PT: val(4),
+                            EN: val(9),
+                            ES: val(11)
+                        },
+                        audioArquivo: { 
+                            PT: resolverCaminhoAudio(val(5)),
+                            EN: resolverCaminhoAudio(val(10)),
+                            ES: resolverCaminhoAudio(val(12))
+                        }
+                    });
+                }
+            } catch (e) {}
+        });
+
+        // Atualiza seletores de idioma permitidos com base nos dados reais
+        atualizarBotoesIdiomaVisiveis();
+        
+        document.getElementById("status-carregamento").innerHTML = TRADUCOES[idiomaAtual].carregados.replace('{qtd}', pontosHistoricos.length);
+        listaCategoriasEncontradas = Array.from(categoriasSet);
+        gerarBotoesFiltro(listaCategoriasEncontradas);
+        plotarPinsNoMapa();
+
+    } catch (erro) {
+        document.getElementById("status-carregamento").innerHTML = "❌ Erro ao sincronizar dados com a planilha.";
+    }
+}
+
+/* ==========================================================================
+   5. RENDERIZAÇÃO DOS ELEMENTOS DO MAPA E POPUPS
+   ========================================================================== */
+function plotarPinsNoMapa() {
+    if (!map) return;
+    
+    // Limpa marcadores existentes
+    listaMarcadoresMapa.forEach(item => map.removeLayer(item.marker));
+    listaMarcadoresMapa = [];
+
+    const bounds = [];
+    const t = TRADUCOES[idiomaAtual];
+
+    pontosHistoricos.forEach(ponto => {
+        if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
+
+        // Suporte aos Balões Padrão (Urbano e Estrada)
+        const iconeUrl = (ponto.balao === 'E') ? '../baloes/Balao_E.png' : '../baloes/Balao_U.png';
+        const customIcon = L.icon({
+            iconUrl: iconeUrl,
+            iconSize: [34, 42],
+            iconAnchor: [17, 42],
+            popupAnchor: [0, -38]
+        });
+
+        bounds.push([ponto.lat, ponto.lng]);
+
+        const marker = L.marker([ponto.lat, ponto.lng], { icon: customIcon }).addTo(map);
+
+        // Fallback inteligente para resumos e áudios
+        const textoResumo = ponto.resumo[idiomaAtual] || ponto.resumo['PT'] || '';
+        const urlAudio = ponto.audioArquivo[idiomaAtual] || ponto.audioArquivo['PT'] || '';
+        const idAudio = `audio-ponto-${ponto.id}`;
+
+        let tagClasse = ponto.balao === 'E' ? 'tag-estrada' : 'tag-urbano';
+        let tagTexto = ponto.balao === 'E' ? 'Estrada' : 'Urbano';
+
+        // Montagem robusta da Modal do Popup
+        let htmlModal = `<div style="font-family:sans-serif;">` +
+        `<span class="badge-tag ${tagClasse}">${tagTexto} (${ponto.raio}m)</span>` +
+        (ponto.categoria ? `<span class="badge-tag tag-categoria">${ponto.categoria}</span>` : '') +
+        `<h3 style="margin:4px 0; font-size:14px; color:#1a365d;">${ponto.nome}</h3>` +
+        (ponto.foto ? `<img src="${ponto.foto}" class="popup-img" alt="${ponto.nome}">` : '') +
+        `<p style="margin:0 0 6px 0; font-size:12px; color:#4a5568;">${textoResumo}</p>` +
+        (urlAudio ? `<label style="font-size:11px; font-weight:bold; color:#1a365d;">${t.ouvirHistoria}</label><audio id="${idAudio}" controls src="${urlAudio}"></audio>` : '') +
+        `</div>`;
+
+        marker.bindPopup(htmlModal, { maxWidth: 280 });
+        listaMarcadoresMapa.push({ ponto: ponto, marker: marker });
+    });
+
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [30, 30] });
+    }
+}
+
+/* ==========================================================================
+   6. CONTROLE DINÂMICO DE IDIOMAS E FILTROS
+   ========================================================================== */
+function atualizarBotoesIdiomaVisiveis() {
+    ['PT', 'EN', 'ES'].forEach(lang => {
+        const btn = document.getElementById(`btn-${lang.toLowerCase()}`);
+        if (btn) {
+            // Exibe se o idioma foi declarado nos Parâmetros
+            if (idiomasHabilitados.includes(lang)) {
+                btn.style.display = 'inline-block';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+    });
+
+    // Se o idioma atual não estiver liberado, força o retorno para PT
+    if (!idiomasHabilitados.includes(idiomaAtual)) {
+        idiomaAtual = 'PT';
+    }
+
+    document.querySelectorAll('.btn-lang').forEach(b => b.classList.remove('active'));
+    const btnAtivo = document.getElementById(`btn-${idiomaAtual.toLowerCase()}`);
+    if (btnAtivo) btnAtivo.classList.add('active');
+}
+
+function trocarIdioma(lang) {
+    idiomaAtual = lang;
+    document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${lang.toLowerCase()}`).classList.add('active');
+    
+    const t = TRADUCOES[lang];
+    document.getElementById('btn-tour-txt').innerText = tourPresencialAtivo ? t.tourParar : t.tour;
+    document.getElementById('btn-gps-txt').innerText = t.gps;
+    
+    gerarBotoesFiltro(listaCategoriasEncontradas);
+    plotarPinsNoMapa();
+}
+
+function gerarBotoesFiltro(lista) {
+    const container = document.getElementById('filter-bar');
+    let classeTodas = categoriaAtiva === 'TODAS' ? 'active' : '';
+    let html = `<button class="btn-filter ${classeTodas}" onclick="filtrarCategoria('TODAS',this)">${TRADUCOES[idiomaAtual].todasCategorias}</button>`;
+    lista.forEach(cat => {
+        let classeCat = categoriaAtiva === cat ? 'active' : '';
+        html += `<button class="btn-filter ${classeCat}" onclick="filtrarCategoria('${cat}', this)">${cat}</button>`;
+    });
+    container.innerHTML = html;
+}
+
+function filtrarCategoria(cat, btn) {
+    categoriaAtiva = cat;
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    plotarPinsNoMapa();
+}
+
+/* ==========================================================================
+   7. GEOLOCALIZAÇÃO E TOUR PRESENCIAL EM TEMPO REAL
+   ========================================================================== */
+function centralizarNoUsuario() {
+    if (!navigator.geolocation) {
+        alert("Geolocalização não é suportada pelo seu navegador.");
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (posicao) => {
+            const lat = posicao.coords.latitude;
+            const lng = posicao.coords.longitude;
+
+            atualizarMarcadorUsuario(lat, lng);
+            map.setView([lat, lng], 17);
+        },
+        () => {
+            alert("Não foi possível obter sua localização. Verifique as permissões do GPS.");
+        },
+        { enableHighAccuracy: true }
+    );
+}
+
+function atualizarMarcadorUsuario(lat, lng) {
+    if (!marcadorUsuario) {
+        marcadorUsuario = L.circleMarker([lat, lng], {
+            color: '#ffffff',
+            fillColor: '#e74c3c',
+            fillOpacity: 1,
+            radius: 8,
+            weight: 2
+        }).addTo(map);
+    } else {
+        marcadorUsuario.setLatLng([lat, lng]);
+    }
+}
+
+function iniciarTourPresencial() {
+    tourPresencialAtivo = !tourPresencialAtivo;
+    const btnTour = document.getElementById('btn-tour-txt');
+
+    if (tourPresencialAtivo) {
+        btnTour.classList.add('ativo');
+        btnTour.innerText = TRADUCOES[idiomaAtual].tourParar;
+        pontosTocadosTour.clear();
+
+        if (navigator.geolocation) {
+            watchGpsId = navigator.geolocation.watchPosition(
+                verificarProximidadePontos,
+                (err) => console.log("Erro GPS:", err),
+                { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+            );
+        }
+    } else {
+        btnTour.classList.remove('ativo');
+        btnTour.innerText = TRADUCOES[idiomaAtual].tour;
+        if (watchGpsId !== null) {
+            navigator.geolocation.clearWatch(watchGpsId);
+            watchGpsId = null;
+        }
+        if (linhaConectora) {
+            map.removeLayer(linhaConectora);
+            linhaConectora = null;
+        }
+    }
+}
+
+function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
+    const R = 6371e3;
+    const rad = Math.PI / 180;
+    const dLat = (lat2 - lat1) * rad;
+    const dLon = (lon2 - lon1) * rad;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
+
+function verificarProximidadePontos(posicao) {
+    if (!tourPresencialAtivo) return;
+    const userLat = posicao.coords.latitude;
+    const userLng = posicao.coords.longitude;
+
+    atualizarMarcadorUsuario(userLat, userLng);
+
+    let pontoMaisProximo = null;
+    let menorDistancia = Infinity;
+
+    pontosHistoricos.forEach(ponto => {
+        const dist = calcularDistanciaMetros(userLat, userLng, ponto.lat, ponto.lng);
+        if (dist < menorDistancia) {
+            menorDistancia = dist;
+            pontoMaisProximo = ponto;
+        }
+
+        if (!pontosTocadosTour.has(ponto.id) && dist <= ponto.raio) {
+            pontosTocadosTour.add(ponto.id);
+
+            const itemMapa = listaMarcadoresMapa.find(m => m.ponto.id === ponto.id);
+            if (itemMapa) {
+                itemMapa.marker.openPopup();
+                map.panTo([ponto.lat, ponto.lng]);
+
+                setTimeout(() => {
+                    const elAudio = document.getElementById(`audio-ponto-${ponto.id}`);
+                    if (elAudio) {
+                        elAudio.play().catch(e => console.log("Bloqueio autostart:", e));
+                    }
+                }, 500);
+            }
+        }
+    });
+
+    if (pontoMaisProximo) {
+        const rotaCoords = [
+            [userLat, userLng],
+            [pontoMaisProximo.lat, pontoMaisProximo.lng]
+        ];
+
+        if (!linhaConectora) {
+            linhaConectora = L.polyline(rotaCoords, {
+                color: '#e67e22',
+                dashArray: '8, 8',
+                weight: 4
+            }).addTo(map);
+        } else {
+            linhaConectora.setLatLngs(rotaCoords);
+        }
+
+        const distTexto = menorDistancia > 1000 
+            ? `${(menorDistancia / 1000).toFixed(1)} km` 
+            : `${Math.round(menorDistancia)}m`;
+        
+        document.getElementById("status-carregamento").innerHTML = 
+            `🚶 Ponto mais próximo: <b>${pontoMaisProximo.nome}</b> (${distTexto})`;
+    }
+}
+
+/* ==========================================================================
+   8. TRATAMENTO DE LINKS E ARQUIVOS DE MÍDIA
+   ========================================================================== */
+function resolverCaminhoAudio(rawInput) {
+    if (!rawInput) return "";
+    let nomeArquivo = String(rawInput).trim();
+    if (nomeArquivo.includes('="') || nomeArquivo.includes('("')) {
+        const matchFormula = nomeArquivo.match(/"([^"\\]+)"/);
+        if (matchFormula) nomeArquivo = matchFormula[1];
+    }
+    nomeArquivo = nomeArquivo.replace(/['"]/g, '').trim();
+    if (!nomeArquivo) return "";
+
+    if (nomeArquivo.startsWith('http://') || nomeArquivo.startsWith('https://')) return nomeArquivo;
+    if (nomeArquivo.includes('/')) return nomeArquivo;
+
+    return `../audios_lang/${nomeArquivo}`;
+}
+
+function formatarLinkImagemDrive(url) {
+    if (!url) return "";
+    let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
+    return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : url.trim();
+}
+
+/* ==========================================================================
+   9. INICIALIZAÇÃO DA APLICAÇÃO
+   ========================================================================== */
+window.onload = () => {
+    initMapOSM();
+};
+</script>
+</body>
+</html>
 
