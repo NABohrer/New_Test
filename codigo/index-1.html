@@ -198,7 +198,6 @@ margin-bottom: 6px;
 display: block;
 }
 
-/* Ajustes visuais do Popup Leaflet */
 .leaflet-popup-content-wrapper {
 padding: 4px;
 border-radius: 8px;
@@ -216,10 +215,10 @@ width: 270px !important;
 
 <div id="header">
 <div class="header-left">
-<img id="header-logo" src="../baloes/Logo_hiphop.png" alt="Logo hip.hop" class="header-logo">
+<img id="header-logo" src="" alt="Logo" class="header-logo" style="display:none;">
 <div class="header-text">
-<h2 id="header-titulo">Plataforma hip.hop 2D</h2>
-<p id="header-subtitulo">DYART - Business Intelligence</p>
+<h2 id="header-titulo">Carregando...</h2>
+<p id="header-subtitulo"></p>
 </div>
 </div>
 <div class="lang-selector" id="lang-container">
@@ -287,9 +286,9 @@ let listaCategoriasEncontradas = [];
 
 let configCliente = {
     tipoMapa: "OSM",
-    titulo: "Plataforma hip.hop 2D",
-    subtitulo: "DYART - Business Intelligence",
-    logoUrl: "../baloes/Logo_hiphop.png",
+    titulo: "",
+    subtitulo: "",
+    logoUrl: "",
     balaoE: "../baloes/Balao_E.png",
     balaoU: "../baloes/Balao_U.png"
 };
@@ -325,7 +324,7 @@ function initMapOSM() {
 }
 
 /* ==========================================================================
-   4. CONEXÃO E LEITURA DA PLANILHA GOOGLE (Aba 1 Vertical + Aba 2 Dados)
+   4. CONEXÃO E LEITURA DA PLANILHA GOOGLE
    ========================================================================== */
 async function buscarDadosGviz(spreadsheetId, paramAba) {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${paramAba}`;
@@ -348,7 +347,6 @@ async function carregarParametrosEAtivarDados() {
         const linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, "gid=0");
 
         if (linhasParam && linhasParam.length > 0) {
-            // Varre as linhas da Aba 1 buscando par Chave (Col A) / Valor (Col B)
             linhasParam.forEach(linha => {
                 if (!linha || !linha.c) return;
                 const chave = normalizarTexto(linha.c[0] ? linha.c[0].v : "");
@@ -365,7 +363,6 @@ async function carregarParametrosEAtivarDados() {
                 }
             });
 
-            // Aplicação dos parâmetros atualizados no topo da tela
             if (configCliente.titulo) {
                 document.getElementById("header-titulo").innerText = configCliente.titulo;
                 document.title = configCliente.titulo;
@@ -374,13 +371,15 @@ async function carregarParametrosEAtivarDados() {
                 document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
             }
             if (configCliente.logoUrl) {
-                document.getElementById("header-logo").src = configCliente.logoUrl;
+                const imgLogo = document.getElementById("header-logo");
+                imgLogo.src = configCliente.logoUrl;
+                imgLogo.style.display = "block";
             }
 
             atualizarBotoesIdiomaVisiveis();
         }
     } catch (e) {
-        console.log("Mantendo parâmetros padrão.", e);
+        console.log("Erro na leitura dos parâmetros:", e);
     }
 
     carregarDadosPontos();
@@ -424,7 +423,6 @@ async function carregarDadosPontos() {
             let nomePatrimonio = val(0);
             const txtNorm = normalizarTexto(nomePatrimonio);
 
-            // Filtra e ignora linhas de cabeçalho
             if (!nomePatrimonio || txtNorm.includes("patrimonio") || txtNorm.includes("nome") || txtNorm.includes("tipo_mapa")) return;
 
             let latNum = parseFloat(val(1).replace(',', '.'));
