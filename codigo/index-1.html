@@ -306,6 +306,11 @@ const TRADUCOES = {
     ES: { tour: "🚀 Iniciar Recorrido", tourParar: "🛑 Detener Recorrido", gps: "📍 Mi Ubicación", carregados: "✅ {qtd} puntos cargados", ouvirHistoria: "🎵 Escuchar Historia:", todasCategorias: "🌐 Todas" }
 };
 
+/* Função para remover acentos e caracteres especiais das chaves da planilha */
+function normalizarTexto(txt) {
+    return String(txt || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
 /* ==========================================================================
    3. INICIALIZAÇÃO DO MAPA (OPENSTREETMAP / LEAFLET)
    ========================================================================== */
@@ -338,29 +343,35 @@ async function carregarParametrosEAtivarDados() {
         if (linhasParam && linhasParam.length > 0) {
             linhasParam.forEach(linha => {
                 if (!linha || !linha.c) return;
-                const chave = linha.c[0] ? String(linha.c[0].v || "").trim().toLowerCase() : "";
+                const chave = normalizarTexto(linha.c[0] ? linha.c[0].v : "");
                 const valor = linha.c[1] ? String(linha.c[1].v || linha.c[1].f || "").trim() : "";
 
                 if (chave.includes("tipo_mapa") || chave.includes("tipo de mapa")) configCliente.tipoMapa = valor.toUpperCase();
-                if (chave.includes("titulo") || chave.includes("título")) configCliente.titulo = valor;
-                if (chave.includes("subtitulo") || chave.includes("subtítulo")) configCliente.subtitulo = valor;
+                if (chave.includes("titulo")) configCliente.titulo = valor;
+                if (chave.includes("subtitulo")) configCliente.subtitulo = valor;
                 if (chave.includes("logo")) configCliente.logoUrl = valor;
-                if (chave.includes("balao_e") || chave.includes("balão_e")) configCliente.balaoE = valor;
-                if (chave.includes("balao_u") || chave.includes("balão_u")) configCliente.balaoU = valor;
+                if (chave.includes("balao_e")) configCliente.balaoE = valor;
+                if (chave.includes("balao_u")) configCliente.balaoU = valor;
                 if (chave.includes("idiomas")) {
-                    idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim());
+                    idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
                 }
             });
 
-            document.getElementById("header-titulo").innerText = configCliente.titulo;
-            document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
-            document.title = configCliente.titulo;
+            if (configCliente.titulo) {
+                document.getElementById("header-titulo").innerText = configCliente.titulo;
+                document.title = configCliente.titulo;
+            }
+            if (configCliente.subtitulo) {
+                document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
+            }
             if (configCliente.logoUrl) {
                 document.getElementById("header-logo").src = configCliente.logoUrl;
             }
+
+            atualizarBotoesIdiomaVisiveis();
         }
     } catch (e) {
-        console.log("Aba de parâmetros não encontrada ou no formato antigo. Mantendo padrões.", e);
+        console.log("Erro ao carregar parâmetros da Aba 1:", e);
     }
 
     carregarDadosPontos();
