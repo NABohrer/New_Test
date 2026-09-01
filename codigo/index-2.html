@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title id="page-title">Plataforma hip.hop 2D</title>
+<title id="page-title">Plataforma hip.hop 2D v3.0</title>
 
 <!-- 📊 Google Analytics 4 (GA4) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-8YBRS5NX34"></script>
@@ -13,9 +13,6 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-8YBRS5NX34');
 
-/* ==========================================================================
-   TELEMETRIA SILENCIOSA GA4 (CONECTADA AO CONSOLE v3.0)
-   ========================================================================== */
 function registrarMetricaGA4(evento, categoria, rotulo) {
     if (typeof gtag === 'function') {
         gtag('event', evento, {
@@ -26,7 +23,7 @@ function registrarMetricaGA4(evento, categoria, rotulo) {
 }
 </script>
 
-<!-- 🗺️ Leaflet CSS e JS (OpenStreetMap Engine) -->
+<!-- 🗺️ Leaflet CSS e JS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
@@ -44,7 +41,6 @@ display: flex;
 flex-direction: column;
 overflow: hidden;
 }
-/* Cabeçalho */
 #header {
 background: #1a365d;
 color: white;
@@ -55,25 +51,12 @@ display: flex;
 align-items: center;
 justify-content: space-between;
 }
-.header-left {
-display: flex;
-align-items: center;
-gap: 10px;
-}
-.header-logo {
-height: 36px;
-width: auto;
-max-width: 120px;
-object-fit: contain;
-}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-logo { height: 36px; width: auto; max-width: 120px; object-fit: contain; }
 .header-text h2 { margin: 0; font-size: 14px; letter-spacing: 0.5px; }
 .header-text p { margin: 1px 0 0 0; font-size: 10px; color: #bee3f8; }
 
-/* Seletor de Idiomas Dinâmico */
-.lang-selector {
-display: flex;
-gap: 4px;
-}
+.lang-selector { display: flex; gap: 4px; }
 .btn-lang {
 background: rgba(255,255,255,0.15);
 color: white;
@@ -86,13 +69,8 @@ cursor: pointer;
 transition: all 0.2s;
 display: none;
 }
-.btn-lang.active {
-background: #e67e22;
-border-color: #e67e22;
-display: inline-block;
-}
+.btn-lang.active { background: #e67e22; border-color: #e67e22; display: inline-block; }
 
-/* Barra de Controle de Tour e Localização */
 #tour-control {
 background: #ffffff;
 padding: 8px 12px;
@@ -116,10 +94,7 @@ cursor: pointer;
 flex: 2;
 transition: background 0.2s;
 }
-.btn-tour.ativo {
-background: #c0392b !important;
-animation: pulse 1.5s infinite;
-}
+.btn-tour.ativo { background: #c0392b !important; animation: pulse 1.5s infinite; }
 .btn-localizacao {
 background: #2b6cb0;
 color: white;
@@ -133,13 +108,8 @@ flex: 1;
 transition: background 0.2s;
 }
 
-@keyframes pulse {
-0% { opacity: 1; }
-50% { opacity: 0.6; }
-100% { opacity: 1; }
-}
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-/* Filtros de Categoria */
 #filter-bar {
 background: #edf2f7;
 padding: 6px 12px;
@@ -162,11 +132,7 @@ font-weight: 600;
 border-radius: 12px;
 cursor: pointer;
 }
-.btn-filter.active {
-background: #1a365d;
-color: white;
-border-color: #1a365d;
-}
+.btn-filter.active { background: #1a365d; color: white; border-color: #1a365d; }
 
 #status-carregamento {
 font-size: 11px;
@@ -178,7 +144,6 @@ background: #edf2f7;
 flex-shrink: 0;
 }
 
-/* Contêiner do Mapa */
 #map {
 width: 100%;
 height: calc(100vh - 140px);
@@ -188,7 +153,6 @@ background: #e2e8f0;
 z-index: 1;
 }
 
-/* Badges e Mídia */
 audio { width: 100%; height: 36px; margin-top: 6px; display: block; }
 .badge-tag {
 display: inline-block;
@@ -211,17 +175,8 @@ margin-bottom: 6px;
 display: block;
 }
 
-.leaflet-popup-content-wrapper {
-padding: 4px;
-border-radius: 8px;
-box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-}
-.leaflet-popup-content {
-margin: 8px 12px !important;
-line-height: 1.4;
-max-width: 270px !important;
-width: 270px !important;
-}
+.leaflet-popup-content-wrapper { padding: 4px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+.leaflet-popup-content { margin: 8px 12px !important; line-height: 1.4; max-width: 270px !important; width: 270px !important; }
 </style>
 </head>
 <body>
@@ -252,9 +207,6 @@ width: 270px !important;
 <div id="map"></div>
 
 <script>
-/* ==========================================================================
-   1. CONFIGURAÇÕES GLOBAIS E CONSTANTES
-   ========================================================================== */
 const ID_PLANILHA_PADRAO = '1oxeXlXTxybVMNYWzauCfp_GATkFzVoXqpTtvKKmmkHg';
 const BASE_GITHUB_RAW = 'https://raw.githubusercontent.com/NABohrer/New_Test/main/baloes/';
 
@@ -313,9 +265,6 @@ function processarUrlDireta(urlInput, fallbackNome) {
     return BASE_GITHUB_RAW + url.split('/').pop();
 }
 
-/* ==========================================================================
-   2. INICIALIZAÇÃO DO MAPA E SELEÇÃO DINÂMICA DA CAMADA (OSM / GM / HYBRID)
-   ========================================================================== */
 function initMapOSM() {
     map = L.map('map').setView([-22.9068, -43.1729], 15);
     carregarParametrosEAtivarDados();
@@ -357,9 +306,6 @@ function aplicarCamadaMapa(tipo) {
     }).addTo(map);
 }
 
-/* ==========================================================================
-   3. CONEXÃO E LEITURA DE DADOS
-   ========================================================================== */
 async function buscarDadosGviz(spreadsheetId, paramAba) {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${paramAba}`;
     const resposta = await fetch(url);
@@ -373,7 +319,7 @@ async function buscarDadosGviz(spreadsheetId, paramAba) {
 
 async function carregarParametrosEAtivarDados() {
     let linhasParam = [];
-    const opcoesParam = ["sheet=PARAMETROS", "sheet=Parametros", "gid=1"];
+    const opcoesParam = ["sheet=PARAMETROS", "sheet=Parametros", "sheet=PARÂMETROS", "gid=1"];
     
     for (let opt of opcoesParam) {
         try {
@@ -497,9 +443,6 @@ async function carregarDadosPontos() {
     plotarPinsNoMapa();
 }
 
-/* ==========================================================================
-   4. RENDERIZAÇÃO DOS PINS NO MAPA E TELEMETRIA DE CLIQUES
-   ========================================================================== */
 function plotarPinsNoMapa() {
     if (!map) return;
     
@@ -543,7 +486,6 @@ function plotarPinsNoMapa() {
 
         marker.bindPopup(htmlModal, { maxWidth: 280 });
 
-        // Evento de Telemetria ao Abrir o Balão
         marker.on('click', () => {
             registrarMetricaGA4('abrir_ponto', 'Mapa_Interacao', ponto.nome);
         });
@@ -556,14 +498,10 @@ function plotarPinsNoMapa() {
     }
 }
 
-// Telemetria acoplada ao player de áudio
 function notificarPlayAudio(nomePonto) {
     registrarMetricaGA4('play_audio', 'Audio_Player', `${nomePonto} [${idiomaAtual}]`);
 }
 
-/* ==========================================================================
-   5. CONTROLE DE IDIOMAS E FILTROS COM GA4
-   ========================================================================== */
 function atualizarBotoesIdiomaVisiveis() {
     ['PT', 'EN', 'ES'].forEach(lang => {
         const btn = document.getElementById(`btn-${lang.toLowerCase()}`);
@@ -584,7 +522,6 @@ function trocarIdioma(lang) {
     document.querySelectorAll('.btn-lang').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`btn-${lang.toLowerCase()}`).classList.add('active');
     
-    // Telemetria de Troca de Idioma
     registrarMetricaGA4('trocar_idioma', 'Preferencia_Usuario', lang);
 
     const t = TRADUCOES[lang];
@@ -611,15 +548,11 @@ function filtrarCategoria(cat, btn) {
     document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     
-    // Telemetria do Filtro Selecionado
     registrarMetricaGA4('filtrar_categoria', 'Filtro_Mapa', cat);
     
     plotarPinsNoMapa();
 }
 
-/* ==========================================================================
-   6. GEOLOCALIZAÇÃO E TOUR PRESENCIAL (GPS COM TELEMETRIA)
-   ========================================================================== */
 function centralizarNoUsuario() {
     if (!navigator.geolocation) {
         alert("Geolocalização não é suportada pelo seu navegador.");
@@ -663,7 +596,6 @@ function iniciarTourPresencial() {
         btnTour.innerText = TRADUCOES[idiomaAtual].tourParar;
         pontosTocadosTour.clear();
 
-        // Telemetria do Tour Iniciado
         registrarMetricaGA4('iniciar_tour_gps', 'Tour_Presencial', 'GPS_Ativo');
 
         if (navigator.geolocation) {
@@ -677,7 +609,6 @@ function iniciarTourPresencial() {
         btnTour.classList.remove('ativo');
         btnTour.innerText = TRADUCOES[idiomaAtual].tour;
         
-        // Telemetria do Tour Parado
         registrarMetricaGA4('parar_tour_gps', 'Tour_Presencial', 'GPS_Inativo');
 
         if (watchGpsId !== null) {
@@ -722,7 +653,6 @@ function verificarProximidadePontos(posicao) {
         if (!pontosTocadosTour.has(ponto.id) && dist <= ponto.raio) {
             pontosTocadosTour.add(ponto.id);
             
-            // Telemetria de Disparo por Proximidade do Tour Presencial
             registrarMetricaGA4('trigger_proximidade', 'Tour_Presencial', ponto.nome);
 
             const itemMapa = listaMarcadoresMapa.find(m => m.ponto.id === ponto.id);
@@ -749,9 +679,6 @@ function verificarProximidadePontos(posicao) {
     }
 }
 
-/* ==========================================================================
-   7. TRATAMENTO DE LINKS DE DRIVE
-   ========================================================================== */
 function formatarLinkImagemDrive(url) {
     if (!url) return "";
     let match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
