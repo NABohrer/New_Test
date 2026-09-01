@@ -254,6 +254,7 @@ function obterIdPlanilhaURL() {
 const ID_PLANILHA_ATIVA = obterIdPlanilhaURL();
 
 let map;
+let currentTileLayer = null;
 let pontosHistoricos = [];
 let listaMarcadoresMapa = [];
 let categoriaAtiva = "TODAS";
@@ -301,43 +302,70 @@ function processarUrlDireta(urlInput, fallbackNome) {
 }
 
 /* ==========================================================================
-   2. INICIALIZAÇÃO DO MAPA (OPENSTREETMAP / LEAFLET)
+   2. INICIALIZAÇÃO DO MAPA E SELEÇÃO DINÂMICA DA CAMADA (OSM / GM / HYBRID)
    ========================================================================== */
 function initMapOSM() {
     map = L.map('map').setView([-22.9068, -43.1729], 15);
-
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        maxZoom: 19
-    }).addTo(map);
-
     carregarParametrosEAtivarDados();
 }
 
+function aplicarCamadaMapa(tipo) {
+    if (currentTileLayer) {
+        map.removeLayer(currentTileLayer);
+    }
+
+    let tileUrl = '';
+    let subdomains = ['a', 'b', 'c'];
+    let maxZoom = 19;
+    let attr = '&copy; OpenStreetMap contributors';
+
+    const tipoNorm = String(tipo || "OSM").toUpperCase().trim();
+
+    if (tipoNorm === 'GM') {
+        // Google Maps Vias/Rua
+        tileUrl = 'https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+        subdomains = ['0', '1', '2', '3'];
+        attr = '&copy; Google Maps';
+        maxZoom = 20;
+    } else if (tipoNorm === 'HYBRID' || tipoNorm === 'SAT') {
+        // Google Maps Satélite com Nomes de Ruas
+        tileUrl = 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+        subdomains = ['0', '1', '2', '3'];
+        attr = '&copy; Google Maps Satélite';
+        maxZoom = 20;
+    } else {
+        // OpenStreetMap Oficial e Limpo (Sem erro de APIKEY)
+        tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        subdomains = ['a', 'b', 'c'];
+        attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+        maxZoom = 19;
+    }
+
+    currentTileLayer = L.tileLayer(tileUrl, {
+        attribution: attr,
+        subdomains: subdomains,
+        maxZoom: maxZoom
+    }).addTo(map);
+}
+
 /* ==========================================================================
-   3. CONEXÃO E LEITURA POR NOME DIRETO DAS ABAS (COM FALLBACK PARA GID)
+   3. CONEXÃO E LEITURA DE DADOS
    ========================================================================== */
 async function buscarDadosGviz(spreadsheetId, paramAba) {
     const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&${paramAba}`;
     const resposta = await fetch(url);
-    if (!resposta.ok) {
-        throw new Error(`HTTP ${resposta.status}`);
-    }
+    if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
     const texto = await resposta.text();
     const jsonInicio = texto.indexOf('{');
     const jsonFim = texto.lastIndexOf('}') + 1;
-    if (jsonInicio === -1 || jsonFim === -1) {
-        throw new Error("Formato inválido");
-    }
-    const jsonPuro = JSON.parse(texto.substring(jsonInicio, jsonFim));
-    return jsonPuro.table.rows || [];
+    if (jsonInicio === -1 || jsonFim === -1) throw new Error("Formato inválido");
+    return JSON.parse(texto.substring(jsonInicio, jsonFim)).table.rows || [];
 }
 
 async function carregarParametrosEAtivarDados() {
     let linhasParam = [];
-    
-    // Tenta carregar a aba PARAMETROS pelo nome (ou por gid=1)
     const opcoesParam = ["sheet=PARAMETROS", "sheet=Parametros", "gid=1"];
+    
     for (let opt of opcoesParam) {
         try {
             linhasParam = await buscarDadosGviz(ID_PLANILHA_ATIVA, opt);
@@ -363,6 +391,9 @@ async function carregarParametrosEAtivarDados() {
         });
     }
 
+    // Aplica a camada de mapa escolhida na planilha
+    aplicarCamadaMapa(configCliente.tipoMapa);
+
     document.getElementById("header-titulo").innerText = configCliente.titulo;
     document.title = configCliente.titulo;
     document.getElementById("header-subtitulo").innerText = configCliente.subtitulo;
@@ -377,9 +408,8 @@ async function carregarParametrosEAtivarDados() {
 
 async function carregarDadosPontos() {
     let linhasDados = [];
-    
-    // Tenta carregar a aba DADOS pelo nome (ou por gid=0)
     const opcoesDados = ["sheet=DADOS", "sheet=Dados", "gid=0"];
+    
     for (let opt of opcoesDados) {
         try {
             linhasDados = await buscarDadosGviz(ID_PLANILHA_ATIVA, opt);
@@ -396,10 +426,7 @@ async function carregarDadosPontos() {
     let contadorId = 1;
     let categoriasSet = new Set();
 
-    const ordemLangs = (idiomasHabilitados && idiomasHabilitados.length > 0) 
-        ? idiomasHabilitados 
-        : ['PT', 'EN', 'ES'];
-
+    const ordemLangs = (idiomasHabilitados && idiomasHabilitados.length > 0) ? idiomasHabilitados : ['PT', 'EN', 'ES'];
     const langPrimario = ordemLangs[0];
 
     linhasDados.forEach((linha) => {
@@ -463,7 +490,7 @@ async function carregarDadosPontos() {
 }
 
 /* ==========================================================================
-   4. RENDERIZAÇÃO DOS ELEMENTOS DO MAPA E POPUPS
+   4. RENDERIZAÇÃO DOS PINS NO MAPA
    ========================================================================== */
 function plotarPinsNoMapa() {
     if (!map) return;
@@ -477,9 +504,7 @@ function plotarPinsNoMapa() {
     pontosHistoricos.forEach(ponto => {
         if (categoriaAtiva !== "TODAS" && ponto.categoria !== categoriaAtiva) return;
 
-        const iconeUrl = (ponto.balao === 'E') 
-            ? configCliente.balaoE 
-            : configCliente.balaoU;
+        const iconeUrl = (ponto.balao === 'E') ? configCliente.balaoE : configCliente.balaoU;
 
         const customIcon = L.icon({
             iconUrl: iconeUrl,
@@ -518,14 +543,12 @@ function plotarPinsNoMapa() {
 }
 
 /* ==========================================================================
-   5. CONTROLE DINÂMICO DE IDIOMAS E FILTROS
+   5. CONTROLE DE IDIOMAS E FILTROS
    ========================================================================== */
 function atualizarBotoesIdiomaVisiveis() {
     ['PT', 'EN', 'ES'].forEach(lang => {
         const btn = document.getElementById(`btn-${lang.toLowerCase()}`);
-        if (btn) {
-            btn.style.display = idiomasHabilitados.includes(lang) ? 'inline-block' : 'none';
-        }
+        if (btn) btn.style.display = idiomasHabilitados.includes(lang) ? 'inline-block' : 'none';
     });
 
     if (!idiomasHabilitados.includes(idiomaAtual)) {
@@ -569,25 +592,21 @@ function filtrarCategoria(cat, btn) {
 }
 
 /* ==========================================================================
-   6. GEOLOCALIZAÇÃO E TOUR PRESENCIAL EM TEMPO REAL
+   6. GEOLOCALIZAÇÃO E TOUR PRESENCIAL
    ========================================================================== */
 function centralizarNoUsuario() {
     if (!navigator.geolocation) {
         alert("Geolocalização não é suportada pelo seu navegador.");
         return;
     }
-
     navigator.geolocation.getCurrentPosition(
-        (posicao) => {
-            const lat = posicao.coords.latitude;
-            const lng = posicao.coords.longitude;
-
+        (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
             atualizarMarcadorUsuario(lat, lng);
             map.setView([lat, lng], 17);
         },
-        () => {
-            alert("Não foi possível obter sua localização. Verifique as permissões do GPS.");
-        },
+        () => alert("Erro ao acessar GPS."),
         { enableHighAccuracy: true }
     );
 }
@@ -644,8 +663,7 @@ function calcularDistanciaMetros(lat1, lon1, lat2, lon2) {
     const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
               Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
               Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
 function verificarProximidadePontos(posicao) {
@@ -667,49 +685,32 @@ function verificarProximidadePontos(posicao) {
 
         if (!pontosTocadosTour.has(ponto.id) && dist <= ponto.raio) {
             pontosTocadosTour.add(ponto.id);
-
             const itemMapa = listaMarcadoresMapa.find(m => m.ponto.id === ponto.id);
             if (itemMapa) {
                 itemMapa.marker.openPopup();
                 map.panTo([ponto.lat, ponto.lng]);
-
                 setTimeout(() => {
                     const elAudio = document.getElementById(`audio-ponto-${ponto.id}`);
-                    if (elAudio) {
-                        elAudio.play().catch(e => console.log("Bloqueio autostart:", e));
-                    }
+                    if (elAudio) elAudio.play().catch(e => console.log(e));
                 }, 500);
             }
         }
     });
 
     if (pontoMaisProximo) {
-        const rotaCoords = [
-            [userLat, userLng],
-            [pontoMaisProximo.lat, pontoMaisProximo.lng]
-        ];
-
+        const rotaCoords = [[userLat, userLng], [pontoMaisProximo.lat, pontoMaisProximo.lng]];
         if (!linhaConectora) {
-            linhaConectora = L.polyline(rotaCoords, {
-                color: '#e67e22',
-                dashArray: '8, 8',
-                weight: 4
-            }).addTo(map);
+            linhaConectora = L.polyline(rotaCoords, { color: '#e67e22', dashArray: '8, 8', weight: 4 }).addTo(map);
         } else {
             linhaConectora.setLatLngs(rotaCoords);
         }
-
-        const distTexto = menorDistancia > 1000 
-            ? `${(menorDistancia / 1000).toFixed(1)} km` 
-            : `${Math.round(menorDistancia)}m`;
-        
-        document.getElementById("status-carregamento").innerHTML = 
-            `🚶 Ponto mais próximo: <b>${pontoMaisProximo.nome}</b> (${distTexto})`;
+        const distTexto = menorDistancia > 1000 ? `${(menorDistancia / 1000).toFixed(1)} km` : `${Math.round(menorDistancia)}m`;
+        document.getElementById("status-carregamento").innerHTML = `🚶 Ponto mais próximo: <b>${pontoMaisProximo.nome}</b> (${distTexto})`;
     }
 }
 
 /* ==========================================================================
-   7. TRATAMENTO DE LINKS E ARQUIVOS DE MÍDIA
+   7. TRATAMENTO DE LINKS DE DRIVE
    ========================================================================== */
 function formatarLinkImagemDrive(url) {
     if (!url) return "";
@@ -717,12 +718,7 @@ function formatarLinkImagemDrive(url) {
     return match && match[1] ? `https://lh3.googleusercontent.com/d/${match[1]}` : url.trim();
 }
 
-/* ==========================================================================
-   8. INICIALIZAÇÃO DA APLICAÇÃO
-   ========================================================================== */
-window.onload = () => {
-    initMapOSM();
-};
+window.onload = initMapOSM;
 </script>
 </body>
 </html>
