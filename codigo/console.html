@@ -29,14 +29,14 @@ button:hover { background: #2b6cb0; }
 .audit-card p { margin: 4px 0 0 0; font-size: 11px; color: #718096; text-transform: uppercase; font-weight: bold; }
 
 /* QR Code & Links */
-.out-box { display: none; text-align: center; }
+.out-box { text-align: center; }
 #qrcode { display: flex; justify-content: center; margin: 15px 0; }
 .btn-group { display: flex; gap: 10px; justify-content: center; }
 .btn-sec { background: #e67e22; }
 .btn-sec:hover { background: #d35400; }
 
 /* Dashboard Iframe GA4 / Looker */
-.telemetry-frame { width: 100%; height: 350px; border: 1px solid #cbd5e0; border-radius: 6px; background: #ffffff; }
+.telemetry-frame { width: 100%; height: 380px; border: 1px solid #cbd5e0; border-radius: 6px; background: #ffffff; }
 </style>
 </head>
 <body>
@@ -47,16 +47,18 @@ button:hover { background: #2b6cb0; }
     <span class="badge-v3">v3.0 - GA4 Telemetry</span>
   </header>
 
-  <!-- MÓDULO 1: ENTRADA E AUDITORIA -->
+  <!-- MÓDULO 1: ENTRADA E AUDITORIA AUTOMÁTICA -->
   <div class="section-box">
-    <label for="sheet-input">ID ou URL da Planilha do Roteiro (Google Sheets):</label>
-    <input type="text" id="sheet-input" value="1oxeXlXTxybVMNYWzauCfp_GATkFzVoXqpTtvKKmmkHg">
-    <button onclick="auditarEGerar()">🔍 Auditar Roteiro & Gerar Distribuição</button>
+    <label for="sheet-input">ID ou URL da Planilha do Roteiro Ativo:</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="sheet-input" style="margin-bottom:0;" placeholder="Carregando ID...">
+      <button onclick="auditarEGerar()" style="white-space:nowrap;">🔄 Atualizar Dados</button>
+    </div>
 
     <div id="audit-results" style="display:none; margin-top:15px;">
-      <label>Resultado da Auditoria em Tempo Real:</label>
+      <label>Status e Diagnóstico em Tempo Real:</label>
       <div class="audit-grid">
-        <div class="audit-card"><h3 id="stat-status">--</h3><p>Status Conexão</p></div>
+        <div class="audit-card"><h3 id="stat-status">--</h3><p>Conexão Planilha</p></div>
         <div class="audit-card"><h3 id="stat-pontos">0</h3><p>Pontos Mapeados</p></div>
         <div class="audit-card"><h3 id="stat-langs">--</h3><p>Idiomas Ativos</p></div>
         <div class="audit-card"><h3 id="stat-audios">0</h3><p>Áudios Vinculados</p></div>
@@ -64,16 +66,16 @@ button:hover { background: #2b6cb0; }
     </div>
   </div>
 
-  <!-- MÓDULO 2: LINK E QR CODE -->
-  <div id="out-section" class="section-box out-box">
-    <label>Link Direto para Publicação / Totens:</label>
+  <!-- MÓDULO 2: LINK PÚBLICO E QR CODE DO ROTEIRO -->
+  <div id="out-section" class="section-box out-box" style="display:none;">
+    <label>Link Público do Mapa (Turistas/Totens):</label>
     <input type="text" id="final-url" readonly>
     
     <div id="qrcode"></div>
 
     <div class="btn-group">
       <button class="btn-sec" onclick="copiarLink()">📋 Copiar Link</button>
-      <button onclick="abrirMapa()">👁️ Abrir Mapa</button>
+      <button onclick="abrirMapa()">👁️ Abrir Mapa do Turista</button>
     </div>
   </div>
 
@@ -82,28 +84,32 @@ button:hover { background: #2b6cb0; }
     <label>📊 Telemetria das Ruas (Acessos e Engajamento em Tempo Real - GA4):</label>
     <p style="font-size:11px; color:#718096; margin-top:0;">Métricas consolidadas de acessos aos balões, idiomas selecionados e acionamentos de áudio.</p>
     
-    <!-- Painel Incorporado do GA4 via Looker Studio (ou atalho de relatórios) -->
-    <div class="telemetry-frame" id="telemetry-container" style="display:flex; align-items:center; justify-content:center; color:#a0aec0; font-size:13px;">
-      <span> Sincronizando com a tag GA4 (G-8YBRS5NX34)... Os dados em tempo real surgem conforme os visitantes navegam.</span>
+    <div class="telemetry-frame" id="telemetry-container" style="display:flex; align-items:center; justify-content:center; color:#718096; font-size:13px; text-align:center; padding:20px;">
+      <span>Sincronizado com a Tag GA4 (G-8YBRS5NX34)<br><small style="color:#a0aec0;">Recebendo interações de cliques em pontos, idiomas e áudios do mapa.</small></span>
     </div>
   </div>
 </div>
 
 <script>
+const ID_PLANILHA_PADRAO = '1oxeXlXTxybVMNYWzauCfp_GATkFzVoXqpTtvKKmmkHg';
+
 function extrairId(input) {
+    if (!input) return "";
     let txt = input.trim();
     let m = txt.match(/\/d\/([a-zA-Z0-9-_]+)/);
     return (m && m[1]) ? m[1] : txt;
 }
 
+function obterIdDaUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id') || ID_PLANILHA_PADRAO;
+}
+
 async function auditarEGerar() {
     const raw = document.getElementById("sheet-input").value;
-    const sheetId = extrairId(raw);
+    const sheetId = extrairId(raw) || ID_PLANILHA_PADRAO;
 
-    if(!sheetId) {
-        alert("Insira um ID de planilha válido.");
-        return;
-    }
+    document.getElementById("sheet-input").value = sheetId;
 
     // 1. Auditoria da Planilha
     try {
@@ -139,7 +145,7 @@ async function auditarEGerar() {
         document.getElementById("audit-results").style.display = "block";
     }
 
-    // 2. Geração da URL e QR Code
+    // 2. Geração da URL e QR Code Apontando para index-2.html
     const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
     const urlFinal = `${baseUrl}/index-2.html?id=${sheetId}`;
 
@@ -161,12 +167,19 @@ function copiarLink() {
     const el = document.getElementById("final-url");
     el.select();
     document.execCommand("copy");
-    alert("Link copiado com sucesso!");
+    alert("Link do mapa copiado com sucesso!");
 }
 
 function abrirMapa() {
     window.open(document.getElementById("final-url").value, '_blank');
 }
+
+// Inicialização Automática
+window.onload = () => {
+    const idUrl = obterIdDaUrl();
+    document.getElementById("sheet-input").value = idUrl;
+    auditarEGerar();
+};
 </script>
 
 </body>
