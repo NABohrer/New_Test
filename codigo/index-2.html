@@ -334,13 +334,19 @@ async function carregarParametrosEAtivarDados() {
             const chave = normalizarTexto(linha.c[0] ? linha.c[0].v : "");
             const valor = linha.c[1] ? String(linha.c[1].v || linha.c[1].f || "").trim() : "";
 
-            if (chave.includes("tipo_mapa")) configCliente.tipoMapa = valor.toUpperCase();
-            if (chave.includes("titulo")) configCliente.titulo = valor;
-            if (chave.includes("subtitulo")) configCliente.subtitulo = valor;
-            if (chave.includes("logo")) configCliente.logoUrl = processarUrlDireta(valor, "Logo_hiphop.png");
-            if (chave.includes("balao_e")) configCliente.balaoE = processarUrlDireta(valor, "Balao_E.png");
-            if (chave.includes("balao_u")) configCliente.balaoU = processarUrlDireta(valor, "Balao_U.png");
-            if (chave.includes("idiomas")) {
+            if (chave.includes("tipo_mapa")) {
+                configCliente.tipoMapa = valor.toUpperCase();
+            } else if (chave.includes("subtitulo")) {
+                configCliente.subtitulo = valor;
+            } else if (chave.includes("titulo")) {
+                configCliente.titulo = valor;
+            } else if (chave.includes("logo")) {
+                configCliente.logoUrl = processarUrlDireta(valor, "Logo_hiphop.png");
+            } else if (chave.includes("balao_e")) {
+                configCliente.balaoE = processarUrlDireta(valor, "Balao_E.png");
+            } else if (chave.includes("balao_u")) {
+                configCliente.balaoU = processarUrlDireta(valor, "Balao_U.png");
+            } else if (chave.includes("idiomas")) {
                 idiomasHabilitados = valor.toUpperCase().split(',').map(s => s.trim()).filter(Boolean);
             }
         });
