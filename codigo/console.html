@@ -18,7 +18,7 @@ header { border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 
 .brand-header { display: flex; align-items: center; gap: 15px; }
 .brand-header img { height: 45px; width: auto; border-radius: 4px; }
 .brand-titles h1 { margin: 0; color: #1a365d; font-size: 18px; }
-.brand-titles h2 { margin: 2px 0 0 0; color: #718096; font-size: 12px; font-weight: normal; }
+.brand-titles h2 { margin: 2px 0 0 0; color: #718096; font-size: 13px; font-weight: normal; }
 .badge-v3 { background: #e67e22; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
 
 .section-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
@@ -52,23 +52,17 @@ button:hover { background: #2b6cb0; }
     <div class="brand-header">
       <img id="logoConsole" src="https://github.com/NABohrer/New_Test/blob/main/baloes/Logo_hiphop.png?raw=true" alt="Logo">
       <div class="brand-titles">
-        <h1 id="tituloConsole">Console de Gestão Cultural</h1>
-        <h2 id="subtituloConsole">Plataforma hip.hop - Versão Multilíngue 3.0</h2>
+        <h1 id="tituloConsole">Carregando título...</h1>
+        <h2 id="subtituloConsole">Carregando subtítulo...</h2>
       </div>
     </div>
     <span class="badge-v3">v3.0 - GA4 Telemetry</span>
   </header>
 
-  <!-- MÓDULO 1: ENTRADA E AUDITORIA AUTOMÁTICA -->
+  <!-- MÓDULO 1: AUDITORIA AUTOMÁTICA DA PLANILHA -->
   <div class="section-box">
-    <label for="sheet-input">ID ou URL da Planilha do Roteiro Ativo:</label>
-    <div style="display:flex; gap:8px;">
-      <input type="text" id="sheet-input" style="margin-bottom:0;" placeholder="Carregando ID...">
-      <button onclick="auditarEGerar()" style="white-space:nowrap;">🔄 Atualizar Dados</button>
-    </div>
-
-    <div id="audit-results" style="display:none; margin-top:15px;">
-      <label>Status e Diagnóstico em Tempo Real:</label>
+    <div id="audit-results">
+      <label>Status e Diagnóstico da Planilha Ativa:</label>
       <div class="audit-grid">
         <div class="audit-card"><h3 id="stat-status">--</h3><p>Conexão Planilha</p></div>
         <div class="audit-card"><h3 id="stat-pontos">0</h3><p>Pontos Mapeados</p></div>
@@ -110,19 +104,12 @@ button:hover { background: #2b6cb0; }
 <script>
 const ID_PLANILHA_PADRAO = '1oxeXlXTxybVMNYWzauCfp_GATkFzVoXqpTtvKKmmkHg';
 
-function extrairId(input) {
-    if (!input) return "";
-    let txt = input.trim();
-    let m = txt.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return (m && m[1]) ? m[1] : txt;
-}
-
 function obterIdDaUrl() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id') || ID_PLANILHA_PADRAO;
 }
 
-// Leitura dos Parâmetros da Planilha (Logo, Título, Subtítulo e URL do Looker)
+// Leitura Automática dos Parâmetros da Planilha
 async function carregarParametrosConsole(sheetId) {
     try {
         const urlGvizParam = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=PARAMETROS`;
@@ -136,14 +123,14 @@ async function carregarParametrosConsole(sheetId) {
                 const chave = String(r.c[0].v).toLowerCase().trim();
                 const valor = String(r.c[1].v).trim();
 
-                if(chave.includes('logo') && valor) {
-                    document.getElementById('logoConsole').src = valor;
-                }
                 if(chave.includes('titulo') && !chave.includes('sub') && valor) {
                     document.getElementById('tituloConsole').innerText = valor;
                 }
                 if(chave.includes('subtitulo') && valor) {
                     document.getElementById('subtituloConsole').innerText = valor;
+                }
+                if(chave.includes('logo') && valor) {
+                    document.getElementById('logoConsole').src = valor;
                 }
                 if((chave.includes('looker') || chave.includes('url')) && valor) {
                     document.getElementById('lookerIframe').src = valor;
@@ -151,20 +138,17 @@ async function carregarParametrosConsole(sheetId) {
             }
         });
     } catch(e) {
-        console.log("Mantendo parâmetros padrão/locais do console.");
+        console.log("Erro ao ler parâmetros da planilha. Mantendo valores padrão.");
     }
 }
 
 async function auditarEGerar() {
-    const raw = document.getElementById("sheet-input").value;
-    const sheetId = extrairId(raw) || ID_PLANILHA_PADRAO;
+    const sheetId = obterIdDaUrl();
 
-    document.getElementById("sheet-input").value = sheetId;
-
-    // Busca Logo, Título, Subtítulo e URL na aba PARAMETROS
+    // 1. Busca Título, Subtítulo, Logo e URL do Looker na aba PARAMETROS
     await carregarParametrosConsole(sheetId);
 
-    // 1. Auditoria da Planilha
+    // 2. Auditoria da Planilha (aba DADOS)
     try {
         const urlGviz = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=DADOS`;
         const resp = await fetch(urlGviz);
@@ -190,15 +174,13 @@ async function auditarEGerar() {
         document.getElementById("stat-pontos").innerText = totalPontos;
         document.getElementById("stat-langs").innerText = "PT / EN / ES";
         document.getElementById("stat-audios").innerText = totalAudios;
-        document.getElementById("audit-results").style.display = "block";
 
     } catch(e) {
         document.getElementById("stat-status").innerText = "⚠️ Erro";
         document.getElementById("stat-status").style.color = "#e74c3c";
-        document.getElementById("audit-results").style.display = "block";
     }
 
-    // 2. Geração da URL e QR Code Apontando para index-2.html
+    // 3. Geração Automática da URL e QR Code Apontando para index-2.html
     const baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
     const urlFinal = `${baseUrl}/index-2.html?id=${sheetId}`;
 
@@ -227,17 +209,10 @@ function abrirMapa() {
     window.open(document.getElementById("final-url").value, '_blank');
 }
 
-// Inicialização Automática
+// Inicialização 100% Automática ao carregar
 window.onload = () => {
-    const idUrl = obtainIdFromUrl();
-    document.getElementById("sheet-input").value = idUrl;
     auditarEGerar();
 };
-
-function obtainIdFromUrl() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id') || ID_PLANILHA_PADRAO;
-}
 </script>
 
 </body>
