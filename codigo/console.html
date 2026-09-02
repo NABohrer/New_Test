@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Console de Gestão v3.0 - Plataforma hip.hop</title>
+<title>Console de Gestão - Plataforma hip.hop</title>
 
 <!-- QRCode.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -12,8 +12,13 @@
 * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
 body { background: #edf2f7; margin: 0; padding: 20px; color: #2d3748; }
 .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+
+/* Header Dinâmico */
 header { border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-h1 { margin: 0; color: #1a365d; font-size: 20px; }
+.brand-header { display: flex; align-items: center; gap: 15px; }
+.brand-header img { height: 45px; width: auto; border-radius: 4px; }
+.brand-titles h1 { margin: 0; color: #1a365d; font-size: 18px; }
+.brand-titles h2 { margin: 2px 0 0 0; color: #718096; font-size: 12px; font-weight: normal; }
 .badge-v3 { background: #e67e22; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; }
 
 .section-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 20px; }
@@ -44,7 +49,13 @@ button:hover { background: #2b6cb0; }
 
 <div class="container">
   <header>
-    <h1>🎛️ Console de Gestão Cultural</h1>
+    <div class="brand-header">
+      <img id="logoConsole" src="https://github.com/NABohrer/New_Test/blob/main/baloes/Logo_hiphop.png?raw=true" alt="Logo">
+      <div class="brand-titles">
+        <h1 id="tituloConsole">Console de Gestão Cultural</h1>
+        <h2 id="subtituloConsole">Plataforma hip.hop - Versão Multilíngue 3.0</h2>
+      </div>
+    </div>
     <span class="badge-v3">v3.0 - GA4 Telemetry</span>
   </header>
 
@@ -111,11 +122,47 @@ function obterIdDaUrl() {
     return params.get('id') || ID_PLANILHA_PADRAO;
 }
 
+// Leitura dos Parâmetros da Planilha (Logo, Título, Subtítulo e URL do Looker)
+async function carregarParametrosConsole(sheetId) {
+    try {
+        const urlGvizParam = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=PARAMETROS`;
+        const resp = await fetch(urlGvizParam);
+        const txt = await resp.text();
+        const jsonPuro = JSON.parse(txt.substring(txt.indexOf('{'), txt.lastIndexOf('}') + 1));
+        const rows = jsonPuro.table.rows || [];
+
+        rows.forEach(r => {
+            if(r && r.c && r.c[0] && r.c[1]) {
+                const chave = String(r.c[0].v).toLowerCase().trim();
+                const valor = String(r.c[1].v).trim();
+
+                if(chave.includes('logo') && valor) {
+                    document.getElementById('logoConsole').src = valor;
+                }
+                if(chave.includes('titulo') && !chave.includes('sub') && valor) {
+                    document.getElementById('tituloConsole').innerText = valor;
+                }
+                if(chave.includes('subtitulo') && valor) {
+                    document.getElementById('subtituloConsole').innerText = valor;
+                }
+                if((chave.includes('looker') || chave.includes('url')) && valor) {
+                    document.getElementById('lookerIframe').src = valor;
+                }
+            }
+        });
+    } catch(e) {
+        console.log("Mantendo parâmetros padrão/locais do console.");
+    }
+}
+
 async function auditarEGerar() {
     const raw = document.getElementById("sheet-input").value;
     const sheetId = extrairId(raw) || ID_PLANILHA_PADRAO;
 
     document.getElementById("sheet-input").value = sheetId;
+
+    // Busca Logo, Título, Subtítulo e URL na aba PARAMETROS
+    await carregarParametrosConsole(sheetId);
 
     // 1. Auditoria da Planilha
     try {
@@ -182,10 +229,15 @@ function abrirMapa() {
 
 // Inicialização Automática
 window.onload = () => {
-    const idUrl = obterIdDaUrl();
+    const idUrl = obtainIdFromUrl();
     document.getElementById("sheet-input").value = idUrl;
     auditarEGerar();
 };
+
+function obtainIdFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id') || ID_PLANILHA_PADRAO;
+}
 </script>
 
 </body>
