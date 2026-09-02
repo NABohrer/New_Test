@@ -36,7 +36,8 @@ button:hover { background: #2b6cb0; }
 .btn-sec:hover { background: #d35400; }
 
 /* Dashboard Iframe GA4 / Looker */
-.telemetry-frame { width: 100%; height: 380px; border: 1px solid #cbd5e0; border-radius: 6px; background: #ffffff; }
+.telemetry-frame { width: 100%; height: 600px; border: 1px solid #cbd5e0; border-radius: 6px; background: #ffffff; overflow: hidden; }
+.telemetry-frame iframe { width: 100%; height: 100%; border: 0; }
 </style>
 </head>
 <body>
@@ -79,13 +80,18 @@ button:hover { background: #2b6cb0; }
     </div>
   </div>
 
-  <!-- MÓDULO 3: TELEMETRIA URBANA GA4 -->
+  <!-- MÓDULO 3: TELEMETRIA URBANA GA4 / LOOKER STUDIO -->
   <div class="section-box">
     <label>📊 Telemetria das Ruas (Acessos e Engajamento em Tempo Real - GA4):</label>
-    <p style="font-size:11px; color:#718096; margin-top:0;">Métricas consolidadas de acessos aos balões, idiomas selecionados e acionamentos de áudio.</p>
+    <p style="font-size:11px; color:#718096; margin-top:0; margin-bottom:12px;">Métricas consolidadas de acessos aos balões, idiomas selecionados e acionamentos de áudio.</p>
     
-    <div class="telemetry-frame" id="telemetry-container" style="display:flex; align-items:center; justify-content:center; color:#718096; font-size:13px; text-align:center; padding:20px;">
-      <span>Sincronizado com a Tag GA4 (G-8YBRS5NX34)<br><small style="color:#a0aec0;">Recebendo interações de cliques em pontos, idiomas e áudios do mapa.</small></span>
+    <div class="telemetry-frame" id="telemetry-container">
+      <iframe 
+        id="lookerIframe" 
+        src="https://datastudio.google.com/embed/reporting/1a9d52fa-5fcc-4a95-9ce5-5dd49a436faa/page/6ey7F" 
+        allowfullscreen 
+        sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox">
+      </iframe>
     </div>
   </div>
 </div>
