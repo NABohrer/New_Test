@@ -17,7 +17,8 @@ function registrarMetricaGA4(evento, categoria, rotulo) {
     if (typeof gtag === 'function') {
         gtag('event', evento, {
             'event_category': categoria,
-            'event_label': rotulo
+            'event_label': rotulo,
+            'custom_label': rotulo // Garantia extra para o GA4 capturar o nome do ponto
         });
     }
 }
